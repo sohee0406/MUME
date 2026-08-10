@@ -29,10 +29,9 @@ export default function Music() {
       setLoading(true);
 
       try {
-        // 현재 페이지로 전달받은 음악 정보
         let currentTrack = location.state?.track || null;
 
-        // 전달받은 정보가 없으면 URL의 id로 다시 검색
+        /* 전달받은 음악 정보가 없으면 ID로 검색 */
         if (!currentTrack && id) {
           const searchData = await getSearch(id);
 
@@ -58,10 +57,9 @@ export default function Music() {
           return;
         }
 
-        // 현재 음악 변경
         setTrack(currentTrack);
 
-        // 음악 상세 정보 검색
+        /* 음악 상세 정보 */
         const detailData = await getSearch(
           `${currentTrack.artist} ${currentTrack.title}`,
         );
@@ -85,7 +83,7 @@ export default function Music() {
           });
         }
 
-        // 비슷한 장르 음악 가져오기
+        /* 비슷한 음악 */
         const genreData = await getSearch(fetchedGenre);
 
         if (genreData?.results && genreData.results.length > 0) {
@@ -117,21 +115,22 @@ export default function Music() {
     fetchMusicDetails();
   }, [id, location.state]);
 
-  // 30초 미리듣기
+  /* =========================
+     30초 미리듣기 페이지 이동
+  ========================= */
+
   const handlePreview = () => {
-    if (!detailInfo.previewUrl) {
-      alert("제공되는 미리듣기 음원이 없습니다.");
-      return;
-    }
-
-    const audio = new Audio(detailInfo.previewUrl);
-
-    audio.play().catch(() => {
-      alert("미리듣기를 재생할 수 없습니다.");
+    navigate("/music/play", {
+      state: {
+        track: {
+          ...track,
+          previewUrl: detailInfo.previewUrl || track?.previewUrl || "",
+        },
+      },
     });
   };
 
-  // 로딩
+  /* 로딩 */
   if (loading && !track) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
@@ -140,7 +139,7 @@ export default function Music() {
     );
   }
 
-  // 음악 정보가 없을 경우
+  /* 음악 정보가 없을 때 */
   if (!track) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white">
@@ -246,7 +245,6 @@ export default function Music() {
         >
           {similarTracks.map((item) => (
             <SwiperSlide key={item.id}>
-              {/* ⭐ 클릭하면 해당 음악 상세페이지로 이동 */}
               <Link
                 to={`/music/${item.id}`}
                 state={{
@@ -269,14 +267,12 @@ export default function Music() {
                   )}
                 </div>
 
-                {/* 음악 정보 */}
+                {/* 제목 → 가수 */}
                 <div className="p-3 flex flex-col justify-center min-h-[60px]">
-                  {/* 제목 */}
                   <span className="text-xs font-bold text-white truncate">
                     {item.title}
                   </span>
 
-                  {/* 가수 */}
                   <span className="text-[11px] text-slate-400 truncate mt-0.5">
                     {item.artist}
                   </span>
