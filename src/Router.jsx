@@ -13,6 +13,8 @@ import Taste from "./pages/taste/Taste";
 
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import PlaylistFix from "./pages/playlist/PlaylistFix";
+import PlaylistDetail from "./pages/playlist/PlaylistDetail";
 
 export default function Router() {
   return (
@@ -41,6 +43,12 @@ export default function Router() {
 
         {/* 플레이리스트 */}
         <Route path="/playlist" element={<Playlist />} />
+
+        {/* 플레이리스트 수정 */}
+        <Route path="/playlistFix" element={<PlaylistFix />} />
+
+        {/* 플레이리스트 디테일 */}
+        <Route path="/playlistdetail" element={<PlaylistDetail />} />
 
         {/* 상세 페이지 */}
         <Route path="/detail/:id" element={<Detail />} />

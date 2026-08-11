@@ -1,34 +1,63 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Play } from "lucide-react"; // 재생 아이콘 (lucide-react가 없다면 일반 SVG나 이모지로 대체 가능)
-import { getArtistSongs } from "../../../api/itunes";
+import { Play } from "lucide-react";
+import { getArtistSongs, getSearch } from "../../../api/itunes";
 
 export default function Section_4() {
   const [tracks, setTracks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [recommendReason, setRecommendReason] = useState("당신을 위한 추천");
 
   useEffect(() => {
     const fetchRecommendedMusic = async () => {
       try {
-        // 1. 💾 로컬 스토리지에서 사용자가 '좋아요' 누른 가수 리스트를 가져옵니다.
-        // (예: localStorage.setItem('likedArtists', JSON.stringify(['아이유', '데이식스'])))
-        const savedArtists =
-          JSON.parse(localStorage.getItem("likedArtists")) || [];
+        setLoading(true);
 
-        let targetArtist = "아이유"; // 기본값 (좋아요 데이터가 없을 때 시안대로 아이유 추천)
+        // 1. 💾 로컬 스토리지에서 좋아요 한 노래 목록 가져오기
+        const savedFavorites =
+          JSON.parse(localStorage.getItem("favorites")) || [];
 
-        // 2. 만약 사용자가 좋아요를 누른 가수가 있다면, 그 중 무작위로 하나를 뽑아 추천 기준점으로 삼습니다.
-        if (savedArtists.length > 0) {
-          targetArtist =
-            savedArtists[Math.floor(Math.random() * savedArtists.length)];
+        let data = null;
+        let favoriteGenre = "";
+
+        // 2. 좋아요 한 노래가 있을 때 최다 장르 분석
+        if (savedFavorites.length > 0) {
+          const genreCounts = {};
+
+          // 각 곡의 장르 카운트 빈도수 계산
+          savedFavorites.forEach((track) => {
+            const genre = track.genre || "Pop"; // 장르가 없으면 기본값 Pop 처리
+            genreCounts[genre] = (genreCounts[genre] || 0) + 1;
+          });
+
+          // 가장 많이 등장한 장르 추출
+          favoriteGenre = Object.keys(genreCounts).reduce((a, b) =>
+            genreCounts[a] > genreCounts[b] ? a : b,
+          );
+
+          setRecommendReason(`가장 즐겨 듣는 장르 [#${favoriteGenre}] 추천`);
+
+          // 최다 장르 키워드로 API 호출
+          data = await getSearch(favoriteGenre);
+
+          // 이미 좋아요 표시한 곡들은 추천 리스트에서 제외 (중복 제거)
+          if (data?.results) {
+            const favoriteIds = savedFavorites.map((fav) => String(fav.id));
+            data.results = data.results.filter(
+              (t) => !favoriteIds.includes(String(t.trackId)),
+            );
+          }
         }
 
-        // 3. 추출된 가수의 음악들을 iTunes API로 검색
-        const data = await getArtistSongs(targetArtist);
+        // 3. 좋아요 데이터가 없거나, 장르 검색 결과가 비어있을 때 (기본값 아이유 추천)
+        if (!data || !data.results || data.results.length === 0) {
+          setRecommendReason("당신을 위한 추천");
+          data = await getArtistSongs("아이유");
+        }
 
-        if (data.results) {
-          // 시안에 맞춰 세로 리스트 형태로 3개만 노출
-          const formattedTracks = data.results.slice(1, 4).map((track) => {
+        // 4. 추출된 데이터를 화면 레이아웃 규격에 맞춰 포맷팅 (3개 노출)
+        if (data && data.results) {
+          const formattedTracks = data.results.slice(0, 3).map((track) => {
             const highResImage = track.artworkUrl100
               ? track.artworkUrl100.replace("100x100bb", "300x300bb")
               : "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop";
@@ -38,12 +67,14 @@ export default function Section_4() {
               title: track.trackName,
               artist: track.artistName,
               image: highResImage,
+              previewUrl: track.previewUrl || "",
+              genre: track.primaryGenreName || favoriteGenre || "Pop",
             };
           });
           setTracks(formattedTracks);
         }
       } catch (err) {
-        console.error("당신을 위한 추천 로드 실패:", err.message);
+        console.error("장르 기반 추천 로드 실패:", err.message);
       } finally {
         setLoading(false);
       }
@@ -57,7 +88,7 @@ export default function Section_4() {
       {/* 타이틀 영역 */}
       <div className="flex items-center gap-1.5 mb-4">
         <h3 className="text-xl font-bold text-white tracking-wide">
-          당신을 위한 추천
+          {recommendReason}
         </h3>
       </div>
 
@@ -75,7 +106,6 @@ export default function Section_4() {
         /* 세로 리스트 레이아웃 */
         <div className="flex flex-col gap-3">
           {tracks.map((track) => (
-            /* 💡 링크 컴포넌트로 감싸서 클릭 시 이동 및 데이터 전달 */
             <Link
               key={track.id}
               to={`/music/${track.id}`}
@@ -104,7 +134,7 @@ export default function Section_4() {
                 </div>
               </div>
 
-              {/* 우측 재생 버튼 (원형 흰색 버튼 스타일 적용) */}
+              {/* 우측 재생 버튼 */}
               <button className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-slate-900 shadow-md transform active:scale-90 transition-transform">
                 <Play size={14} fill="currentColor" className="ml-0.5" />
               </button>

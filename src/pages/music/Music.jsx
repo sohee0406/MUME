@@ -1,11 +1,74 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
-import { Play } from "lucide-react";
+import { Play, ArrowLeft } from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
 
 import "swiper/css";
 
 import { getSearch } from "../../api/itunes";
+
+// 💡 장르 판별 헬퍼 함수
+const classifyKoreanGenre = (trackTitle, primaryGenre) => {
+  const title = trackTitle.toLowerCase();
+  const genre = primaryGenre ? primaryGenre.toLowerCase() : "";
+  const hasKorean = /[가-힣]/.test(trackTitle); // 한글 포함 여부 확인
+
+  if (!hasKorean) {
+    if (genre.includes("hip-hop") || genre.includes("rap")) return "힙합 / 랩";
+    if (genre.includes("r&b") || genre.includes("soul")) return "R&B / Soul";
+    if (genre.includes("rock")) return "락 / 메탈";
+    if (genre.includes("indie")) return "인디 음악";
+    return primaryGenre || "Pop";
+  }
+
+  if (
+    genre.includes("hip-hop") ||
+    genre.includes("rap") ||
+    title.includes("feat.") ||
+    title.includes("remix")
+  ) {
+    return "국내 힙합";
+  }
+
+  if (genre.includes("r&b") || genre.includes("soul")) {
+    return "국내 R&B";
+  }
+
+  if (
+    genre.includes("alternative") ||
+    genre.includes("indie") ||
+    genre.includes("folk")
+  ) {
+    return "인디 / 포크";
+  }
+
+  const balladKeywords = [
+    "사랑",
+    "이별",
+    "기억",
+    "그대",
+    "눈물",
+    "너",
+    "바람",
+    "하루",
+    "우리",
+    "생각",
+    "마음",
+    "길",
+    "안녕",
+    "지나",
+    "그때",
+  ];
+  const isBalladLikely = balladKeywords.some((keyword) =>
+    title.includes(keyword),
+  );
+
+  if (genre.includes("pop") || genre.includes("k-pop") || genre === "music") {
+    return isBalladLikely ? "발라드" : "발라드";
+  }
+
+  return primaryGenre || "발라드 / 가요";
+};
 
 export default function Music() {
   const { id } = useParams();
@@ -31,7 +94,10 @@ export default function Music() {
       try {
         let currentTrack = location.state?.track || null;
 
-        /* 전달받은 음악 정보가 없으면 ID로 검색 */
+        /* =========================
+           전달받은 음악 정보가 없으면
+           ID로 검색
+        ========================= */
         if (!currentTrack && id) {
           const searchData = await getSearch(id);
 
@@ -46,6 +112,7 @@ export default function Music() {
                 ? t.artworkUrl100.replace("100x100bb", "300x300bb")
                 : "",
               previewUrl: t.previewUrl || "",
+              genre: t.primaryGenreName || "Pop",
             };
 
             setTrack(currentTrack);
@@ -59,17 +126,21 @@ export default function Music() {
 
         setTrack(currentTrack);
 
-        /* 음악 상세 정보 */
+        /* =========================
+           음악 상세 정보
+        ========================= */
         const detailData = await getSearch(
           `${currentTrack.artist} ${currentTrack.title}`,
         );
 
-        let fetchedGenre = "Pop";
+        let fetchedGenre = currentTrack.genre || "Pop";
 
         if (detailData?.results && detailData.results.length > 0) {
           const info = detailData.results[0];
+          const rawGenre = info.primaryGenreName || "Pop";
 
-          fetchedGenre = info.primaryGenreName || "Pop";
+          // 스마트 장르 분류 함수 적용
+          fetchedGenre = classifyKoreanGenre(currentTrack.title, rawGenre);
 
           const formattedDate = info.releaseDate
             ? info.releaseDate.split("T")[0].replace(/-/g, ".")
@@ -81,9 +152,16 @@ export default function Music() {
             releaseDate: formattedDate,
             previewUrl: info.previewUrl || currentTrack.previewUrl || "",
           });
+
+          setTrack((prev) => ({
+            ...prev,
+            genre: fetchedGenre,
+          }));
         }
 
-        /* 비슷한 음악 */
+        /* =========================
+           비슷한 음악
+        ========================= */
         const genreData = await getSearch(fetchedGenre);
 
         if (genreData?.results && genreData.results.length > 0) {
@@ -99,6 +177,7 @@ export default function Music() {
                 ? item.artworkUrl100.replace("100x100bb", "300x300bb")
                 : "",
               previewUrl: item.previewUrl || "",
+              genre: item.primaryGenreName || fetchedGenre,
             }));
 
           setSimilarTracks(filteredTracks);
@@ -118,7 +197,6 @@ export default function Music() {
   /* =========================
      30초 미리듣기 페이지 이동
   ========================= */
-
   const handlePreview = () => {
     navigate("/music/play", {
       state: {
@@ -130,7 +208,9 @@ export default function Music() {
     });
   };
 
-  /* 로딩 */
+  /* =========================
+     로딩
+  ========================= */
   if (loading && !track) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
@@ -139,14 +219,15 @@ export default function Music() {
     );
   }
 
-  /* 음악 정보가 없을 때 */
+  /* =========================
+     음악 정보가 없을 때
+  ========================= */
   if (!track) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white">
         <p className="mb-4">음악 정보를 찾을 수 없습니다.</p>
-
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/")}
           className="px-5 py-2 bg-white text-slate-900 rounded-full font-bold"
         >
           돌아가기
@@ -160,8 +241,17 @@ export default function Music() {
       {/* =========================
           메인 음악
       ========================= */}
-
       <div className="flex flex-col items-center text-center mb-8">
+        <div className="w-full max-w-xs flex justify-start mb-4 pl-1">
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="p-2 bg-slate-800/60 hover:bg-slate-700 text-slate-200 rounded-full transition active:scale-95 shadow-md flex items-center justify-center"
+          >
+            <ArrowLeft size={18} />
+          </button>
+        </div>
+
         {/* 앨범 커버 */}
         <div className="w-64 h-64 rounded-[32px] overflow-hidden shadow-2xl bg-slate-900 mb-6">
           <img
@@ -187,7 +277,6 @@ export default function Music() {
           className="flex items-center gap-1.5 px-6 py-2.5 bg-white text-black font-bold rounded-full text-sm shadow-md transition-transform active:scale-95"
         >
           <Play size={14} fill="currentColor" />
-
           <span>30초 미리 듣기</span>
         </button>
       </div>
@@ -195,7 +284,6 @@ export default function Music() {
       {/* =========================
           음악 정보
       ========================= */}
-
       <section className="mb-8">
         <h2 className="text-xl font-bold mb-4">음악 정보</h2>
 
@@ -204,7 +292,6 @@ export default function Music() {
             {/* 앨범 */}
             <div className="flex items-center min-w-0">
               <span className="text-slate-400 w-16 flex-shrink-0">앨범</span>
-
               <span className="bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-xs max-w-[220px] truncate">
                 {detailInfo.album}
               </span>
@@ -213,7 +300,6 @@ export default function Music() {
             {/* 장르 */}
             <div className="flex items-center">
               <span className="text-slate-400 w-16 flex-shrink-0">장르</span>
-
               <span className="bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-xs">
                 {detailInfo.genre}
               </span>
@@ -222,7 +308,6 @@ export default function Music() {
             {/* 발매일 */}
             <div className="flex items-center">
               <span className="text-slate-400 w-16 flex-shrink-0">발매일</span>
-
               <span className="bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-xs">
                 {detailInfo.releaseDate}
               </span>
@@ -234,7 +319,6 @@ export default function Music() {
       {/* =========================
           비슷한 음악
       ========================= */}
-
       <section className="mb-10">
         <h2 className="text-xl font-bold mb-4">비슷한 음악</h2>
 
@@ -252,7 +336,6 @@ export default function Music() {
                 }}
                 className="flex flex-col bg-[#1E2640] rounded-2xl overflow-hidden shadow-md hover:bg-[#252F4D] transition-colors"
               >
-                {/* 앨범 커버 */}
                 <div className="w-full aspect-square bg-slate-800">
                   {item.image ? (
                     <img
@@ -267,12 +350,10 @@ export default function Music() {
                   )}
                 </div>
 
-                {/* 제목 → 가수 */}
                 <div className="p-3 flex flex-col justify-center min-h-[60px]">
                   <span className="text-xs font-bold text-white truncate">
                     {item.title}
                   </span>
-
                   <span className="text-[11px] text-slate-400 truncate mt-0.5">
                     {item.artist}
                   </span>
@@ -286,14 +367,20 @@ export default function Music() {
       {/* =========================
           플레이리스트 추가
       ========================= */}
-
       <div className="w-full mt-auto pt-4 mb-16">
-        <button
-          onClick={() => alert("내 플레이리스트에 추가되었습니다! ➕")}
-          className="w-full py-4 bg-[#E2E8F0] text-slate-900 font-bold rounded-full text-base transition-transform active:scale-95 shadow-lg"
+        <Link
+          to="/playlist"
+          state={{
+            addTrack: {
+              ...track,
+              previewUrl: detailInfo.previewUrl || track?.previewUrl || "",
+              genre: track?.genre || detailInfo.genre || "Pop",
+            },
+          }}
+          className="w-full py-4 bg-[#E2E8F0] text-slate-900 font-bold rounded-full text-base transition-transform active:scale-95 shadow-lg flex items-center justify-center"
         >
           내 playlist 추가하기 +
-        </button>
+        </Link>
       </div>
     </div>
   );

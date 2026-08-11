@@ -8,6 +8,7 @@ import {
   Pause,
   SkipForward,
   RefreshCw,
+  ArrowLeft, // 💡 뒤로가기 아이콘 추가
 } from "lucide-react";
 import { getSearch } from "../../api/itunes";
 
@@ -175,6 +176,17 @@ export default function MusicPlayer() {
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
+  /* =================================================
+      💡 [추가] Music 상세 페이지(`/music/:id`)로 돌아가는 함수
+  ================================================= */
+  const handleBackToMusic = () => {
+    if (track?.id) {
+      navigate(`/music/${track.id}`, { state: { track } });
+    } else {
+      navigate(-1);
+    }
+  };
+
   // 로딩
   if (loading && !track) {
     return (
@@ -198,7 +210,16 @@ export default function MusicPlayer() {
       )}
 
       {/* 1. 상단 뱃지 버튼 그룹 */}
-      <div className="w-full max-w-sm flex gap-2.5 mb-5 justify-start pl-1">
+      <div className="w-full max-w-sm flex gap-2.5 mb-5 justify-start items-center pl-1">
+        {/* ⚡ [추가] 좋아요 왼쪽에 위치한 뒤로가기 버튼 */}
+        <button
+          type="button"
+          onClick={handleBackToMusic}
+          className="p-1.5 bg-slate-700/50 hover:bg-slate-600 text-slate-200 rounded-full transition active:scale-95"
+        >
+          <ArrowLeft size={16} />
+        </button>
+
         {/* 좋아요 */}
         <button
           onClick={handleLikeToggle}
@@ -213,18 +234,18 @@ export default function MusicPlayer() {
             fill={isLiked ? "#FFFFFF" : "none"}
             className={isLiked ? "text-white" : "text-slate-300"}
           />
-
           <span>좋아요</span>
         </button>
 
-        {/* 담기 → 플레이리스트로 이동 */}
+        {/* 담기 버튼 */}
         <button
           type="button"
-          onClick={() => navigate("/playlist")}
+          onClick={() =>
+            navigate("/playlist", { state: { selectedTrack: track } })
+          }
           className="flex items-center gap-1 px-3 py-1 bg-slate-700/50 hover:bg-slate-600 text-xs text-slate-200 rounded-full transition"
         >
           <Plus size={12} className="text-slate-300" />
-
           <span>담기</span>
         </button>
       </div>
@@ -246,7 +267,6 @@ export default function MusicPlayer() {
         <h2 className="text-2xl font-bold tracking-tight mb-2 px-4 line-clamp-1">
           {track?.title || "음악 이름"}
         </h2>
-
         <p className="text-sm text-slate-400 font-medium">
           {track?.artist || "가수 이름"}
         </p>
@@ -271,10 +291,8 @@ export default function MusicPlayer() {
             )`,
           }}
         />
-
         <div className="flex justify-between text-xs text-slate-400 mt-2">
           <span>{formatTime(currentTime)}</span>
-
           <span>{formatTime(duration)}</span>
         </div>
       </div>
@@ -314,7 +332,6 @@ export default function MusicPlayer() {
       {/* 6. 하단 안내 텍스트 */}
       <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-10">
         <RefreshCw size={12} />
-
         <span>30초 미리듣기가 제공됩니다</span>
       </div>
     </div>
