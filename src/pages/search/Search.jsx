@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search as SearchIcon, ArrowLeft, X, Play } from "lucide-react";
-import { getSearch } from "../../api/itunes"; // 💡 기존에 사용하시던 api 경로
+import { getSearch } from "../../api/itunes";
 
 export default function Search() {
   const navigate = useNavigate();
   const [keyword, setKeyword] = useState("");
   const [searchResults, setSearchResults] = useState([]);
+  const [displayCount, setDisplayCount] = useState(5); // 현재 화면에 보여줄 개수 (최초 5개)
   const [recentSearches, setRecentSearches] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -21,16 +22,17 @@ export default function Search() {
     }
   }, []);
 
-  // 검색 실행 함수
+  // 검색 실행 함수 (속도를 위해 처음부터 최대 15개를 한 번에 가져옴)
   const handleSearch = async (searchWord) => {
     const trimmedWord = searchWord.trim();
     if (!trimmedWord) return;
 
     setLoading(true);
+    setDisplayCount(5); // 새로운 검색 시 다시 5개부터 보이도록 초기화
     try {
-      const data = await getSearch(trimmedWord);
+      // 💡 15개만 딱 고정으로 가져와서 속도를 유지합니다.
+      const data = await getSearch(trimmedWord, 15);
       if (data?.results) {
-        // 기존 상세페이지 구조와 맞게 데이터 매핑
         const formatted = data.results.map((t) => ({
           id: t.trackId,
           title: t.trackName,
@@ -48,7 +50,7 @@ export default function Search() {
       const updatedSearches = [
         trimmedWord,
         ...recentSearches.filter((item) => item !== trimmedWord),
-      ].slice(0, 5); // 최대 5개 유지
+      ].slice(0, 5);
 
       setRecentSearches(updatedSearches);
       localStorage.setItem(
@@ -71,7 +73,7 @@ export default function Search() {
 
   // 최근 검색어 개별 삭제
   const deleteRecentSearch = (e, wordToDelete) => {
-    e.stopPropagation(); // 클릭 이벤트 전파 방지
+    e.stopPropagation();
     const updated = recentSearches.filter((word) => word !== wordToDelete);
     setRecentSearches(updated);
     localStorage.setItem("recentMumeSearches", JSON.stringify(updated));
@@ -83,11 +85,14 @@ export default function Search() {
     localStorage.removeItem("recentMumeSearches");
   };
 
+  // 💡 더 보기 버튼 클릭 시 5개씩 증가 (최대 15개 제한)
+  const handleLoadMore = () => {
+    setDisplayCount((prev) => Math.min(prev + 5, 15));
+  };
+
   return (
-    <div className="min-h-screen bg-slate-950 text-white px-5 pt-6 pb-10">
-      {/* =========================
-          💡 [요청사항] 흰색 검색창
-      ========================= */}
+    <div className="min-h-screen bg-slate-950 text-white px-5 pt-6 pb-20">
+      {/* 검색창 */}
       <div className="relative w-full mb-8">
         <input
           type="text"
@@ -106,23 +111,25 @@ export default function Search() {
         </button>
       </div>
 
-      {/* =========================
-          콘텐츠 영역 (결과화면 vs 기본화면)
-      ========================= */}
+      {/* 콘텐츠 영역 */}
       {searchResults.length > 0 ? (
-        // 1. 검색 결과 리스트 표시
         <section className="mb-20">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">검색 결과</h2>
             <button
-              onClick={() => setSearchResults([])}
+              onClick={() => {
+                setSearchResults([]);
+                setDisplayCount(5);
+              }}
               className="text-xs text-slate-400 hover:text-white"
             >
               결과 닫기
             </button>
           </div>
+
           <div className="flex flex-col gap-3">
-            {searchResults.map((track) => (
+            {/* 💡 displayCount 만큼만 화면에 렌더링 */}
+            {searchResults.slice(0, displayCount).map((track) => (
               <div
                 key={track.id}
                 onClick={() =>
@@ -149,9 +156,18 @@ export default function Search() {
               </div>
             ))}
           </div>
+
+          {/* 💡 15개가 되지 않았고, 전체 검색 결과 개수보다 적을 때만 더 보기 버튼 노출 */}
+          {displayCount < 15 && displayCount < searchResults.length && (
+            <button
+              onClick={handleLoadMore}
+              className="w-full mt-5 py-3 bg-slate-900 hover:bg-slate-800 text-slate-300 font-semibold rounded-2xl text-sm transition shadow-md"
+            >
+              더 보기 +
+            </button>
+          )}
         </section>
       ) : (
-        // 2. 검색 전 기본 화면 (최근 검색 & 추천 검색)
         <>
           {/* 최근 검색어 */}
           <section className="mb-8">

@@ -24,9 +24,10 @@ export default function Section_4() {
         if (savedFavorites.length > 0) {
           const genreCounts = {};
 
-          // 각 곡의 장르 카운트 빈도수 계산
+          // 각 곡의 장르 빈도수 계산 (기존 데이터 고정 강제 주입 제거)
           savedFavorites.forEach((track) => {
-            const genre = track.genre || "Pop"; // 장르가 없으면 기본값 Pop 처리
+            // track.genre가 존재하면 그 값을 그대로 사용, 없으면 기본값 "Pop"
+            const genre = track.genre || "Pop";
             genreCounts[genre] = (genreCounts[genre] || 0) + 1;
           });
 
@@ -37,8 +38,18 @@ export default function Section_4() {
 
           setRecommendReason(`가장 즐겨 듣는 장르 [#${favoriteGenre}] 추천`);
 
+          // 한글 장르명에 따른 검색 쿼리 매핑
+          let searchQuery = favoriteGenre;
+          if (favoriteGenre === "발라드") searchQuery = "발라드";
+          else if (favoriteGenre === "댄스") searchQuery = "댄스";
+          else if (favoriteGenre === "랩/힙합") searchQuery = "힙합";
+          else if (favoriteGenre === "R&B/Soul") searchQuery = "R&B";
+          else if (favoriteGenre === "인디") searchQuery = "인디";
+          else if (favoriteGenre === "팝" || favoriteGenre === "Pop")
+            searchQuery = "Pop";
+
           // 최다 장르 키워드로 API 호출
-          data = await getSearch(favoriteGenre);
+          data = await getSearch(searchQuery);
 
           // 이미 좋아요 표시한 곡들은 추천 리스트에서 제외 (중복 제거)
           if (data?.results) {
@@ -68,6 +79,7 @@ export default function Section_4() {
               artist: track.artistName,
               image: highResImage,
               previewUrl: track.previewUrl || "",
+              // 실제 API 결과의 primaryGenreName이 있으면 사용하고, 없으면 분석된 선호 장르 사용
               genre: track.primaryGenreName || favoriteGenre || "Pop",
             };
           });

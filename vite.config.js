@@ -5,4 +5,13 @@ import tailwindcss from "@tailwindcss/vite";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: {
+    proxy: {
+      "/itunes-api": {
+        target: "https://itunes.apple.com",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/itunes-api/, ""),
+      },
+    },
+  },
 });

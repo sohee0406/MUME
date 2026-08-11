@@ -2,12 +2,9 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Play } from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
-
 import "swiper/css";
-
 import { getGenreMusic } from "../../../api/itunes";
 
-// 음악 장르 리스트
 const GENRE_LIST = [
   { id: "ballad", name: "발라드", query: "발라드" },
   { id: "dance", name: "댄스", query: "댄스" },
@@ -24,88 +21,51 @@ export default function Section_5() {
   const [tracks, setTracks] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 선택된 장르가 바뀌면 음악 불러오기
   useEffect(() => {
     const fetchGenreMusic = async () => {
       setLoading(true);
-
       try {
         const data = await getGenreMusic(activeGenre.query);
-
         if (data.results) {
-          const formattedTracks = data.results.slice(0, 4).map((track) => {
-            const highResImage = track.artworkUrl100
+          const formattedTracks = data.results.slice(0, 4).map((track) => ({
+            id: track.trackId || track.trackName,
+            title: track.trackName,
+            artist: track.artistName,
+            image: track.artworkUrl100
               ? track.artworkUrl100.replace("100x100bb", "300x300bb")
-              : "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop";
-
-            return {
-              id: track.trackId || track.trackName,
-              title: track.trackName,
-              artist: track.artistName,
-              image: highResImage,
-            };
-          });
-
+              : "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop",
+            genre: activeGenre.name, // 💡 상세페이지로 장르명 전달
+          }));
           setTracks(formattedTracks);
-        } else {
-          setTracks([]);
         }
       } catch (err) {
-        console.error("장르별 음악 로드 실패:", err.message);
-        setTracks([]);
+        console.error("장르 로드 실패:", err);
       } finally {
         setLoading(false);
       }
     };
-
     fetchGenreMusic();
   }, [activeGenre]);
 
-  // 장르 선택
-  const handleGenreClick = (genre) => {
-    setActiveGenre(genre);
-  };
-
   return (
-    <section className="px-5 py-8 mb-10">
-      {/* 상단 타이틀 */}
-      <div className="mb-5">
-        <h2 className="text-xl font-bold text-white">장르별 탐색</h2>
-      </div>
-
-      {/* 장르 Swiper */}
+    <section className="px-5 py-8 mb-16">
+      <h2 className="text-xl font-bold text-white mb-5">장르별 탐색</h2>
       <div className="w-full mb-5">
         <Swiper
           slidesPerView="auto"
           spaceBetween={8}
-          freeMode={{
-            enabled: true,
-            momentum: true,
-            momentumRatio: 0.8,
-            momentumVelocityRatio: 0.8,
-          }}
-          grabCursor={true}
+          freeMode={true}
           className="w-full"
         >
           {GENRE_LIST.map((genre) => (
             <SwiperSlide key={genre.id} className="!w-auto">
               <button
-                onClick={() => handleGenreClick(genre)}
-                className={`
-                  px-4
-                  py-2
-                  rounded-full
-                  text-xs
-                  font-medium
-                  whitespace-nowrap
-                  transition-all
-                  duration-200
-                  ${
-                    activeGenre.id === genre.id
-                      ? "bg-blue-600 text-white font-bold shadow-sm"
-                      : "bg-slate-800 text-slate-400"
-                  }
-                `}
+                onClick={() => setActiveGenre(genre)}
+                className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+                  activeGenre.id === genre.id
+                    ? "bg-blue-600 text-white font-bold shadow-sm"
+                    : "bg-slate-800 text-slate-400"
+                }`}
               >
                 {genre.name}
               </button>
@@ -114,7 +74,6 @@ export default function Section_5() {
         </Swiper>
       </div>
 
-      {/* 장르별 음악 리스트 */}
       {loading ? (
         <div className="flex flex-col gap-3">
           {[1, 2, 3].map((n) => (
@@ -131,11 +90,9 @@ export default function Section_5() {
               key={track.id}
               to={`/music/${track.id}`}
               state={{ track }}
-              className="flex items-center justify-between bg-transparent p-2 rounded-xl cursor-pointer"
+              className="flex items-center justify-between bg-transparent p-2 rounded-xl"
             >
-              {/* 왼쪽 이미지 + 음악 정보 */}
               <div className="flex items-center gap-4 min-w-0">
-                {/* 앨범 아트 */}
                 <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-900 flex-shrink-0">
                   <img
                     src={track.image}
@@ -143,20 +100,15 @@ export default function Section_5() {
                     className="w-full h-full object-cover"
                   />
                 </div>
-
-                {/* 타이틀 & 아티스트 */}
                 <div className="flex flex-col justify-center min-w-0">
                   <span className="text-sm font-bold text-white line-clamp-1">
                     {track.artist}
                   </span>
-
                   <span className="text-xs text-slate-400 font-medium tracking-tight mt-0.5 line-clamp-1">
                     {track.title}
                   </span>
                 </div>
               </div>
-
-              {/* 우측 재생 버튼 */}
               <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-slate-900 shadow-md flex-shrink-0">
                 <Play size={14} fill="currentColor" className="ml-0.5" />
               </div>

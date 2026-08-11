@@ -72,11 +72,11 @@ export const getArtistInfo = (artist) =>
     artist,
   });
 
-// 아티스트 인기 음악
+// 아티스트 인기 음악 (공통 fetchMusic 활용으로 통일)
 export const getArtistTopTracks = (artist) =>
   fetchMusic("artist.gettoptracks", {
     artist,
-    limit: 20,
+    limit: 10,
   });
 
 // 아티스트 인기 앨범

@@ -31,9 +31,9 @@ export default function Favorite() {
     localStorage.setItem("favorites", JSON.stringify(updatedSongs));
   };
 
-  // 💡 플레이리스트 좋아요 해제 함수 (추가됨)
+  // 플레이리스트 좋아요 해제 함수
   const handleRemoveLikePlaylist = (id, e) => {
-    e.stopPropagation(); // 카드 클릭 이벤트 전파 방지
+    e.stopPropagation();
     const updatedPlaylists = likedPlaylists.filter(
       (p) => String(p.id) !== String(id),
     );
@@ -46,9 +46,8 @@ export default function Favorite() {
     navigate(`/music/${song.id}`, { state: { track: song } });
   };
 
-  // 💡 플레이리스트 상세 이동 함수 (추가됨)
+  // 플레이리스트 상세 이동 함수
   const handlePlaylistClick = (playlist) => {
-    // Playlist.jsx로 이동하며 선택된 플레이리스트 정보를 전달
     navigate("/playlist", { state: { selectedPlaylist: playlist } });
   };
 
@@ -118,7 +117,7 @@ export default function Favorite() {
                         {song.title}
                       </h3>
                       <p className="text-[13px] text-slate-600 font-medium truncate">
-                        {song.artist} • {song.genre || "K-POP"}
+                        {song.artist} • {song.genre || "K-Pop"}
                       </p>
                     </div>
                   </div>
@@ -145,7 +144,6 @@ export default function Favorite() {
               likedPlaylists.map((playlist) => (
                 <div
                   key={playlist.id}
-                  // 💡 상세 페이지로 이동
                   onClick={() => handlePlaylistClick(playlist)}
                   className="flex items-center justify-between bg-[#E5E7EB] rounded-[24px] p-4 cursor-pointer active:scale-[0.99] transition-transform shadow-md"
                 >
@@ -170,7 +168,6 @@ export default function Favorite() {
                       </p>
                     </div>
                   </div>
-                  {/* 💡 좋아요 취소 버튼 추가 */}
                   <button
                     onClick={(e) => handleRemoveLikePlaylist(playlist.id, e)}
                     className="p-2 text-red-500 active:scale-90 transition-transform shrink-0"
