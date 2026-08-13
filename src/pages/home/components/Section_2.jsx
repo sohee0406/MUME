@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
-// 💡 라우팅을 위해 Link 컴포넌트를 import 합니다.
 import { Link } from "react-router-dom";
 
 import { getArtistSongs } from "../../../api/itunes";
@@ -60,60 +59,41 @@ export default function Section_2() {
   }, []);
 
   return (
-    <section className="w-full max-w-md mx-auto bg-[#0d1527] text-white px-5 py-6 font-sans">
-      {/* 타이틀 영역 */}
+    <section className="w-full bg-[#0d1527] text-white px-4 py-7 mb-3 font-sans">
       <div className="flex items-center gap-1.5 mb-4">
-        <span className="text-xl">🎧</span>
         <h3 className="text-xl font-bold text-white tracking-wide">
           오늘의 music
         </h3>
       </div>
 
-      {/* 로딩 UI */}
       {loading ? (
-        <div className="flex gap-4 overflow-hidden">
+        <div className="flex gap-3 overflow-hidden">
           {[1, 2, 3].map((n) => (
             <div
               key={n}
-              className="w-[140px] h-[140px] flex-shrink-0 bg-slate-800/50 animate-pulse rounded-xl"
+              className="w-[130px] h-[130px] flex-shrink-0 bg-slate-800/50 animate-pulse rounded-xl"
             />
           ))}
         </div>
       ) : (
-        /* Swiper 가로 슬라이더 */
         <Swiper
-          spaceBetween={14}
-          slidesPerView={2.3}
-          slidesOffsetAfter={20}
+          spaceBetween={12}
+          slidesPerView={2.2}
+          slidesOffsetAfter={16}
           className="mySwiper !overflow-visible"
         >
           {tracks.map((track) => (
-            <SwiperSlide key={track.id} className="w-[140px]">
-              {/* 💡 기존 div 박스를 <Link> 컴포넌트로 변경하여 클릭 시 이동하도록 만들었습니다. */}
+            <SwiperSlide key={track.id} className="w-[130px]">
               <Link
                 to={`/music/${track.id}`}
-                state={{ track }} // 섹션 3과 동일하게 데이터를 state로 넘겨줍니다.
-                className="relative w-[140px] h-[140px] rounded-xl overflow-hidden group cursor-pointer shadow-md bg-slate-900 block"
+                state={{ track }}
+                className="relative w-[130px] h-[130px] rounded-xl overflow-hidden cursor-pointer shadow-md bg-slate-900 block"
               >
-                {/* 앨범 커버 이미지 */}
                 <img
                   src={track.image}
                   alt={track.title}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  className="w-full h-full object-cover"
                 />
-
-                {/* 마우스 올리면 나타나는 검은색 반투명 오버레이 박스 */}
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-
-                {/* 마우스 올리면 투명도가 변하며 슥 나타나는 텍스트 레이아웃 */}
-                <div className="absolute inset-0 flex flex-col justify-center items-center p-3 text-center opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
-                  <span className="text-xs font-bold tracking-wider line-clamp-1 uppercase">
-                    {track.artist}
-                  </span>
-                  <span className="text-[10px] text-slate-300 font-medium tracking-tight mt-1 line-clamp-2">
-                    {track.title}
-                  </span>
-                </div>
               </Link>
             </SwiperSlide>
           ))}

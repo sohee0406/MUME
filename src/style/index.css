@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+/* 스크롤바 숨기기 (크롬, 사파리, 오페라, 엣지) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* 스크롤바 숨기기 (파이어폭스, IE, 엣지 레거시) */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
 * {
   box-sizing: border-box;
 }

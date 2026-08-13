@@ -6,7 +6,7 @@ import Section_5 from "./components/Section_5";
 
 export default function Home() {
   return (
-    <div>
+    <div className="mb-[50px]">
       <Section_1 />
       <Section_2 />
       <Section_3 />

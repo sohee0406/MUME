@@ -16,12 +16,23 @@ export default function Favorite() {
     }
 
     const savedPlaylists = localStorage.getItem("liked_playlists");
+    const allPlaylists =
+      JSON.parse(localStorage.getItem("mume_playlists")) || [];
+
     if (savedPlaylists) {
-      setLikedPlaylists(JSON.parse(savedPlaylists));
+      const parsedLiked = JSON.parse(savedPlaylists);
+
+      const syncedPlaylists = parsedLiked.map((likedPl) => {
+        const latestPl = allPlaylists.find(
+          (p) => String(p.id) === String(likedPl.id),
+        );
+        return latestPl ? latestPl : likedPl;
+      });
+
+      setLikedPlaylists(syncedPlaylists);
     }
   }, []);
 
-  // 노래 좋아요 해제
   const handleRemoveLike = (id, e) => {
     e.stopPropagation();
     const updatedSongs = likedSongs.filter(
@@ -31,7 +42,6 @@ export default function Favorite() {
     localStorage.setItem("favorites", JSON.stringify(updatedSongs));
   };
 
-  // 플레이리스트 좋아요 해제 함수
   const handleRemoveLikePlaylist = (id, e) => {
     e.stopPropagation();
     const updatedPlaylists = likedPlaylists.filter(
@@ -41,12 +51,10 @@ export default function Favorite() {
     localStorage.setItem("liked_playlists", JSON.stringify(updatedPlaylists));
   };
 
-  // 곡 선택 이동
   const handleSongClick = (song) => {
     navigate(`/music/${song.id}`, { state: { track: song } });
   };
 
-  // 플레이리스트 상세 이동 함수
   const handlePlaylistClick = (playlist) => {
     navigate("/playlist", { state: { selectedPlaylist: playlist } });
   };
@@ -67,7 +75,7 @@ export default function Favorite() {
           onClick={() => setActiveTab("songs")}
           className={`px-4 py-2 text-xs font-bold rounded-full transition-all ${
             activeTab === "songs"
-              ? "bg-white text-[#0F172A]"
+              ? "bg-blue-500 text-white"
               : "bg-slate-800 text-slate-400 hover:bg-slate-700"
           }`}
         >
@@ -77,7 +85,7 @@ export default function Favorite() {
           onClick={() => setActiveTab("playlists")}
           className={`px-4 py-2 text-xs font-bold rounded-full transition-all ${
             activeTab === "playlists"
-              ? "bg-white text-[#0F172A]"
+              ? "bg-blue-500 text-white"
               : "bg-slate-800 text-slate-400 hover:bg-slate-700"
           }`}
         >
@@ -86,7 +94,6 @@ export default function Favorite() {
       </div>
 
       <main className="flex-1 overflow-y-auto px-5 pb-24 scrollbar-hide">
-        {/* [탭 1] 노래 목록 */}
         {activeTab === "songs" && (
           <div className="space-y-3.5">
             {likedSongs.length === 0 ? (
@@ -98,7 +105,7 @@ export default function Favorite() {
                 <div
                   key={song.id}
                   onClick={() => handleSongClick(song)}
-                  className="flex items-center justify-between bg-[#D1D5DB] rounded-[24px] p-4 cursor-pointer active:scale-[0.99] transition-transform select-none shadow-md"
+                  className="flex items-center justify-between bg-white opacity-90 rounded-[24px] p-4 cursor-pointer active:scale-[0.99] transition-transform select-none shadow-md"
                 >
                   <div className="flex items-center gap-4 min-w-0 flex-1">
                     <div className="w-[72px] h-[72px] bg-slate-400 rounded-[20px] overflow-hidden shrink-0 shadow-sm">
@@ -109,7 +116,7 @@ export default function Favorite() {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full bg-slate-500" />
+                        <div className="w-full h-full bg-white" />
                       )}
                     </div>
                     <div className="min-w-0">
@@ -133,7 +140,6 @@ export default function Favorite() {
           </div>
         )}
 
-        {/* [탭 2] 플레이리스트 목록 */}
         {activeTab === "playlists" && (
           <div className="space-y-3.5">
             {likedPlaylists.length === 0 ? (
@@ -145,10 +151,10 @@ export default function Favorite() {
                 <div
                   key={playlist.id}
                   onClick={() => handlePlaylistClick(playlist)}
-                  className="flex items-center justify-between bg-[#E5E7EB] rounded-[24px] p-4 cursor-pointer active:scale-[0.99] transition-transform shadow-md"
+                  className="flex items-center justify-between bg-white rounded-[24px] p-4 cursor-pointer active:scale-[0.99] transition-transform shadow-md"
                 >
                   <div className="flex items-center gap-4 min-w-0 flex-1">
-                    <div className="w-[72px] h-[72px] bg-slate-400 rounded-[20px] overflow-hidden shrink-0">
+                    <div className="w-[72px] h-[72px] bg-slate-200 rounded-[20px] overflow-hidden shrink-0">
                       {playlist.coverImage ? (
                         <img
                           src={playlist.coverImage}

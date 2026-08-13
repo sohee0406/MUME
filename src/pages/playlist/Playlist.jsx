@@ -8,22 +8,13 @@ export default function Playlist() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  /* =========================
-      화면 상태
-  ========================= */
   const [view, setView] = useState("list");
   const [editingPlaylist, setEditingPlaylist] = useState(null);
 
-  /* =========================
-      💡 음악 추가용 데이터 및 선택 모드 판별
-  ========================= */
   const addTrack =
     location.state?.selectedTrack || location.state?.addTrack || null;
   const isSelectionMode = addTrack !== null;
 
-  /* =========================
-      플레이리스트 데이터
-  ========================= */
   const [playlists, setPlaylists] = useState(() => {
     const savedPlaylists = localStorage.getItem("mume_playlists");
     return savedPlaylists ? JSON.parse(savedPlaylists) : [];
@@ -31,34 +22,24 @@ export default function Playlist() {
 
   const [openMenuId, setOpenMenuId] = useState(null);
 
-  /* =========================
-      💡 모달(팝업) 관련 상태들
-  ========================= */
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [targetDeleteId, setTargetDeleteId] = useState(null);
 
-  // 곡 추가 관련 알림 팝업 상태
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState({ title: "", desc: "" });
 
   const menuRef = useRef(null);
 
-  // 데이터 변경 시 로컬스토리지 저장
   useEffect(() => {
     localStorage.setItem("mume_playlists", JSON.stringify(playlists));
   }, [playlists]);
 
-  /* =================================================
-      ⚡ [추가] Favorite 등 외부 탭에서 클릭해 들어왔을 때 
-      상세 보기(detail)로 자동 라우팅 처리
-  ================================================= */
   useEffect(() => {
     if (location.state?.selectedPlaylist) {
       const targetPlaylist = location.state.selectedPlaylist;
       setEditingPlaylist(targetPlaylist);
       setView("detail");
 
-      // 처리 후 history state를 초기화하여 뒤로 가기 시 오작동 방지
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state, navigate, location.pathname]);
@@ -91,13 +72,9 @@ export default function Playlist() {
     }
   };
 
-  /* =========================
-      💡 실제 곡을 플레이리스트에 저장하는 로직
-  ========================= */
   const executeAddSong = (targetPlaylist, track) => {
     if (!targetPlaylist || !track) return;
 
-    // 중복 체크
     const alreadyExists = (targetPlaylist.songs || []).some(
       (song) => String(song.id) === String(track.id),
     );
@@ -134,7 +111,6 @@ export default function Playlist() {
         : prev,
     );
 
-    // 성공 팝업 띄우기
     setAlertMessage({
       title: "곡 추가 완료",
       desc: `"${track.title}"이(가)\n"${targetPlaylist.title}"에 저장되었습니다.`,
@@ -142,9 +118,6 @@ export default function Playlist() {
     setIsAlertModalOpen(true);
   };
 
-  /* =========================
-      💡 곡 추가 팝업 닫기 및 초기화 후 화면 복귀
-  ========================= */
   const closeAlertModal = () => {
     setIsAlertModalOpen(false);
 
@@ -152,10 +125,6 @@ export default function Playlist() {
       navigate(location.pathname, { replace: true, state: {} });
       setView("list");
     }
-  };
-
-  const handleAddSongDirect = (track) => {
-    if (editingPlaylist) executeAddSong(editingPlaylist, track);
   };
 
   const handleSavePlaylist = (data) => {
@@ -168,6 +137,7 @@ export default function Playlist() {
                 title: data.title,
                 description: data.description,
                 coverImage: data.coverImage,
+                // 기존 songs 데이터가 유실되지 않도록 유지합니다.
               }
             : playlist,
         ),
@@ -194,21 +164,15 @@ export default function Playlist() {
     setOpenMenuId(null);
   };
 
-  /* =================================================
-      ⚡ [수정] 플레이리스트 모달 삭제 확정 로직
-      - 원본 삭제와 동시에 'liked_playlists' 데이터 완벽 동기화
-  ================================================= */
   const confirmDelete = () => {
     if (targetDeleteId === null) return;
 
-    // 1) 메인 플레이리스트 목록에서 제거
     setPlaylists((prevPlaylists) =>
       prevPlaylists.filter(
         (playlist) => String(playlist.id) !== String(targetDeleteId),
       ),
     );
 
-    // 2) 좋아요 표시한 플레이리스트 보관함(liked_playlists)에서도 제거
     const savedLikedPlaylists = localStorage.getItem("liked_playlists");
     if (savedLikedPlaylists) {
       const likedList = JSON.parse(savedLikedPlaylists);
@@ -239,7 +203,6 @@ export default function Playlist() {
 
   return (
     <div className="flex flex-col h-screen bg-app-bg text-white max-w-md mx-auto shadow-2xl relative font-sans overflow-hidden">
-      {/* MY PLAYLIST 메인 리스트 뷰 */}
       {view === "list" && (
         <main className="flex-1 flex flex-col px-5 pt-8 overflow-hidden">
           <div className="shrink-0">
@@ -253,7 +216,8 @@ export default function Playlist() {
             </p>
           </div>
 
-          <div className="flex-1 overflow-y-auto mb-6 pr-1 scrollbar-hide">
+          {/* 스크롤바 숨김 속성 추가 */}
+          <div className="flex-1 overflow-y-auto mb-6 pr-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {playlists.length === 0 ? (
               <div className="flex flex-col gap-10">
                 <div className="bg-white rounded-[32px] h-[280px] flex items-center justify-center shadow-inner">
@@ -359,14 +323,20 @@ export default function Playlist() {
 
       {view === "detail" && (
         <PlaylistDetail
-          playlist={editingPlaylist}
-          selectedTrack={addTrack}
-          onAddSong={handleAddSongDirect}
+          playlist={playlists.find((p) => p.id === editingPlaylist?.id)}
           onBack={() => setView("list")}
+          onUpdatePlaylist={(updatedPlaylist) => {
+            setEditingPlaylist(updatedPlaylist);
+
+            setPlaylists((prev) =>
+              prev.map((p) =>
+                p.id === updatedPlaylist.id ? updatedPlaylist : p,
+              ),
+            );
+          }}
         />
       )}
 
-      {/* 곡 추가 알림 팝업 모달 창 */}
       {isAlertModalOpen && (
         <div className="absolute inset-0 bg-black/50 backdrop-blur-[4px] z-50 flex items-center justify-center p-6">
           <div className="bg-white w-full max-w-[280px] rounded-[24px] p-6 shadow-2xl text-center flex flex-col items-center">
@@ -389,7 +359,6 @@ export default function Playlist() {
         </div>
       )}
 
-      {/* 삭제 확인 모달 레이어 */}
       {isDeleteModalOpen && (
         <div className="absolute inset-0 bg-black/50 backdrop-blur-[4px] z-50 flex items-center justify-center p-6">
           <div className="bg-white w-full max-w-[280px] rounded-[24px] p-6 shadow-2xl text-center">

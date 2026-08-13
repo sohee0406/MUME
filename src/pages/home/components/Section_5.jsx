@@ -34,7 +34,7 @@ export default function Section_5() {
             image: track.artworkUrl100
               ? track.artworkUrl100.replace("100x100bb", "300x300bb")
               : "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop",
-            genre: activeGenre.name, // 💡 상세페이지로 장르명 전달
+            genre: activeGenre.name,
           }));
           setTracks(formattedTracks);
         }
@@ -48,7 +48,7 @@ export default function Section_5() {
   }, [activeGenre]);
 
   return (
-    <section className="px-5 py-8 mb-16">
+    <section className="px-5 py-7 mb-16">
       <h2 className="text-xl font-bold text-white mb-5">장르별 탐색</h2>
       <div className="w-full mb-5">
         <Swiper

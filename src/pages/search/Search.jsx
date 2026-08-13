@@ -1,20 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search as SearchIcon, ArrowLeft, X, Play } from "lucide-react";
+import { Search as SearchIcon, X, Play } from "lucide-react";
 import { getSearch } from "../../api/itunes";
 
 export default function Search() {
   const navigate = useNavigate();
   const [keyword, setKeyword] = useState("");
   const [searchResults, setSearchResults] = useState([]);
-  const [displayCount, setDisplayCount] = useState(5); // 현재 화면에 보여줄 개수 (최초 5개)
+  const [displayCount, setDisplayCount] = useState(5);
   const [recentSearches, setRecentSearches] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // 추천 검색어 리스트
   const recommendationList = ["NewJeans", "아이유", "Pretender", "Pop", "Jazz"];
 
-  // 컴포넌트 마운트 시 로컬스토리지에서 최근 검색어 불러오기
   useEffect(() => {
     const saved = localStorage.getItem("recentMumeSearches");
     if (saved) {
@@ -22,15 +20,13 @@ export default function Search() {
     }
   }, []);
 
-  // 검색 실행 함수 (속도를 위해 처음부터 최대 15개를 한 번에 가져옴)
   const handleSearch = async (searchWord) => {
     const trimmedWord = searchWord.trim();
     if (!trimmedWord) return;
 
     setLoading(true);
-    setDisplayCount(5); // 새로운 검색 시 다시 5개부터 보이도록 초기화
+    setDisplayCount(5);
     try {
-      // 💡 15개만 딱 고정으로 가져와서 속도를 유지합니다.
       const data = await getSearch(trimmedWord, 15);
       if (data?.results) {
         const formatted = data.results.map((t) => ({
@@ -46,7 +42,6 @@ export default function Search() {
         setSearchResults(formatted);
       }
 
-      // 최근 검색어 추가 (중복 제거)
       const updatedSearches = [
         trimmedWord,
         ...recentSearches.filter((item) => item !== trimmedWord),
@@ -64,14 +59,12 @@ export default function Search() {
     }
   };
 
-  // 엔터키 다운 핸들러
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
       handleSearch(keyword);
     }
   };
 
-  // 최근 검색어 개별 삭제
   const deleteRecentSearch = (e, wordToDelete) => {
     e.stopPropagation();
     const updated = recentSearches.filter((word) => word !== wordToDelete);
@@ -79,20 +72,17 @@ export default function Search() {
     localStorage.setItem("recentMumeSearches", JSON.stringify(updated));
   };
 
-  // 최근 검색어 전체 삭제
   const clearAllRecentSearches = () => {
     setRecentSearches([]);
     localStorage.removeItem("recentMumeSearches");
   };
 
-  // 💡 더 보기 버튼 클릭 시 5개씩 증가 (최대 15개 제한)
   const handleLoadMore = () => {
     setDisplayCount((prev) => Math.min(prev + 5, 15));
   };
 
   return (
     <div className="min-h-screen bg-slate-950 text-white px-5 pt-6 pb-20">
-      {/* 검색창 */}
       <div className="relative w-full mb-8">
         <input
           type="text"
@@ -111,7 +101,6 @@ export default function Search() {
         </button>
       </div>
 
-      {/* 콘텐츠 영역 */}
       {searchResults.length > 0 ? (
         <section className="mb-20">
           <div className="flex justify-between items-center mb-4">
@@ -128,7 +117,6 @@ export default function Search() {
           </div>
 
           <div className="flex flex-col gap-3">
-            {/* 💡 displayCount 만큼만 화면에 렌더링 */}
             {searchResults.slice(0, displayCount).map((track) => (
               <div
                 key={track.id}
@@ -157,7 +145,6 @@ export default function Search() {
             ))}
           </div>
 
-          {/* 💡 15개가 되지 않았고, 전체 검색 결과 개수보다 적을 때만 더 보기 버튼 노출 */}
           {displayCount < 15 && displayCount < searchResults.length && (
             <button
               onClick={handleLoadMore}
@@ -169,7 +156,6 @@ export default function Search() {
         </section>
       ) : (
         <>
-          {/* 최근 검색어 */}
           <section className="mb-8">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-bold">최근 검색</h2>
@@ -212,7 +198,6 @@ export default function Search() {
             )}
           </section>
 
-          {/* 추천 검색어 */}
           <section>
             <h2 className="text-lg font-bold mb-4">추천 검색</h2>
             <div className="flex flex-wrap gap-2">
@@ -234,7 +219,6 @@ export default function Search() {
         </>
       )}
 
-      {/* 로딩 인디케이터 */}
       {loading && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center text-sm z-50">
           <div className="bg-slate-900 px-5 py-3 rounded-xl border border-slate-800">

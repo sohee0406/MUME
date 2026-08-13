@@ -1,31 +1,45 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
-import { Play, ArrowLeft, Heart } from "lucide-react";
+import { Play, Heart, X, CheckCircle2, Loader2 } from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 
 import { getSearch } from "../../api/itunes";
 import { getArtistTopTracks, getTrackTags } from "../../api/lastfm";
+import { useScrollTop } from "../../lib/useScrollTop";
 
 export default function Music() {
+  useScrollTop();
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
 
   const [track, setTrack] = useState(location.state?.track || null);
   const [detailInfo, setDetailInfo] = useState({
-    album: "로딩 중...",
-    genre: "분석 중...",
-    releaseDate: "로딩 중...",
+    album: "",
+    genre: "",
+    releaseDate: "",
     previewUrl: "",
   });
   const [artistTracks, setArtistTracks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [myPlaylists, setMyPlaylists] = useState([]);
 
+  const [toastMessage, setToastMessage] = useState("");
+  const [showToast, setShowToast] = useState(false);
+
+  const triggerToast = (msg) => {
+    setToastMessage(msg);
+    setShowToast(true);
+    setTimeout(() => {
+      setShowToast(false);
+    }, 2000);
+  };
+
+  useEffect(() => {
     const fetchMusicDetails = async () => {
       setLoading(true);
 
@@ -55,7 +69,6 @@ export default function Music() {
           return;
         }
 
-        // 1. iTunes 상세정보 조회
         const detailData = await getSearch(
           `${currentTrack.artist} ${currentTrack.title}`,
         );
@@ -109,7 +122,6 @@ export default function Music() {
           previewUrl: info?.previewUrl || currentTrack.previewUrl,
         });
 
-        // 💡 로컬스토리지에 이미 좋아요 되어있는지 확인하고, 최신 장르로 업데이트
         const savedFavorites =
           JSON.parse(localStorage.getItem("favorites")) || [];
         const found = savedFavorites.some(
@@ -117,19 +129,16 @@ export default function Music() {
         );
         setIsLiked(found);
 
-        // 2. 해당 가수의 다른 인기곡 조회
         try {
           const topTracksData = await getArtistTopTracks(currentTrack.artist);
           if (topTracksData?.toptracks?.track) {
             const rawTracks = topTracksData.toptracks.track;
-
             const hybridTracks = await Promise.all(
               rawTracks.slice(0, 10).map(async (item) => {
                 if (
                   item.name.toLowerCase() === currentTrack.title.toLowerCase()
                 )
                   return null;
-
                 const res = await getSearch(
                   `${currentTrack.artist} ${item.name}`,
                 );
@@ -146,8 +155,7 @@ export default function Music() {
                   : null;
               }),
             );
-            const validTracks = hybridTracks.filter((t) => t !== null);
-            setArtistTracks(validTracks);
+            setArtistTracks(hybridTracks.filter((t) => t !== null));
           }
         } catch (e) {
           console.warn("가수 인기곡 조회 실패");
@@ -161,7 +169,6 @@ export default function Music() {
     fetchMusicDetails();
   }, [id, location.state]);
 
-  // 상세 페이지 내 좋아요 토글 함수 (분석된 장르가 정확히 저장됨)
   const toggleLike = () => {
     if (!track) return;
     const savedFavorites = JSON.parse(localStorage.getItem("favorites")) || [];
@@ -181,7 +188,7 @@ export default function Music() {
         title: track.title,
         artist: track.artist,
         image: track.image,
-        genre: detailInfo.genre, // 👈 분석 완료된 정확한 장르 저장!
+        genre: detailInfo.genre,
       };
       updatedFavorites = [...savedFavorites, newTrackItem];
       setIsLiked(true);
@@ -189,32 +196,44 @@ export default function Music() {
     localStorage.setItem("favorites", JSON.stringify(updatedFavorites));
   };
 
+  const handleOpenPlaylistModal = () => {
+    const saved = JSON.parse(localStorage.getItem("mume_playlists")) || [];
+    setMyPlaylists(saved);
+    setIsModalOpen(true);
+  };
+
+  const handleAddSongToPlaylist = (playlist) => {
+    const songToAdd = {
+      id: track.id,
+      title: track.title,
+      artist: track.artist,
+      image: track.image,
+      previewUrl: detailInfo.previewUrl,
+      genre: detailInfo.genre,
+    };
+
+    const updatedSongs = [...(playlist.songs || []), songToAdd];
+    const updatedPlaylist = { ...playlist, songs: updatedSongs };
+
+    const allPlaylists = myPlaylists.map((pl) =>
+      String(pl.id) === String(playlist.id) ? updatedPlaylist : pl,
+    );
+    localStorage.setItem("mume_playlists", JSON.stringify(allPlaylists));
+
+    setIsModalOpen(false);
+    triggerToast(`"${playlist.title}" 플레이리스트에 곡이 추가되었습니다!`);
+  };
+
   if (loading && !track)
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
-        로딩 중...
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
       </div>
     );
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white px-5 pt-6 pb-28">
-      {/* 상단 버튼 및 이미지 */}
-      <div className="flex flex-col items-center text-center mb-8">
-        <div className="w-full max-w-xs flex justify-between items-center mb-4">
-          <button
-            onClick={() => navigate("/")}
-            className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition"
-          >
-            <ArrowLeft size={18} />
-          </button>
-          {/* 좋아요 버튼 추가 */}
-          <button
-            onClick={toggleLike}
-            className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition text-red-500"
-          >
-            <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
-          </button>
-        </div>
+    <div className="min-h-screen bg-slate-950 text-white px-5 pt-12 pb-28 relative">
+      <div className="flex flex-col items-center text-center mb-10">
         <div className="w-64 h-64 rounded-[32px] overflow-hidden bg-slate-900 mb-6 shadow-2xl">
           <img
             src={track?.image}
@@ -225,56 +244,79 @@ export default function Music() {
         <h1 className="text-2xl font-bold mb-1 px-4 line-clamp-1">
           {track?.title}
         </h1>
-        <p className="text-sm text-slate-400 mb-5">{track?.artist}</p>
-        <button
-          onClick={() =>
-            navigate("/music/play", {
-              state: {
-                track: {
-                  ...track,
-                  previewUrl: detailInfo.previewUrl,
-                  genre: detailInfo.genre,
+        <p className="text-sm text-slate-400 mb-6">{track?.artist}</p>
+
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() =>
+              navigate("/music/play", {
+                state: {
+                  track: {
+                    ...track,
+                    previewUrl: detailInfo.previewUrl,
+                    genre: detailInfo.genre,
+                  },
                 },
-              },
-            })
-          }
-          className="flex items-center gap-2 px-8 py-3 bg-white text-black font-bold rounded-full text-sm shadow-md transition active:scale-95"
-        >
-          <Play size={14} fill="currentColor" /> 미리 듣기
-        </button>
+              })
+            }
+            className="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white font-bold rounded-full text-sm shadow-md transition active:scale-95"
+          >
+            <Play size={14} fill="currentColor" /> 미리 듣기
+          </button>
+          <button
+            onClick={toggleLike}
+            className="text-gray-200 transition active:scale-95"
+          >
+            <Heart
+              size={26}
+              fill={isLiked ? "red" : "none"}
+              stroke={isLiked ? "red" : "currentColor"}
+            />
+          </button>
+        </div>
       </div>
 
-      {/* 정보 섹션 */}
-      <section className="mb-8">
-        <h2 className="text-xl font-bold mb-4">음악 정보</h2>
-        <div className="bg-white text-slate-900 rounded-[24px] p-5 shadow-lg">
+      <section className="mb-10">
+        <h2 className="text-lg font-bold mb-4 ml-1">음악 정보</h2>
+        <div className="bg-white/5 border border-white/10 rounded-[24px] p-5">
           <div className="flex flex-col gap-4 text-sm font-medium">
             <div className="flex items-center">
               <span className="text-slate-400 w-16">앨범</span>
-              <span className="bg-slate-100 px-3 py-1 rounded-full text-xs truncate max-w-[200px]">
-                {detailInfo.album}
+              <span className="bg-white/5 px-3 py-1 rounded-full text-xs truncate max-w-[200px] text-slate-200">
+                {detailInfo.album ? (
+                  detailInfo.album
+                ) : (
+                  <Loader2 className="w-3 h-3 animate-spin inline text-slate-400" />
+                )}
               </span>
             </div>
             <div className="flex items-center">
               <span className="text-slate-400 w-16">장르</span>
-              <span className="bg-slate-100 px-3 py-1 rounded-full text-xs">
-                {detailInfo.genre}
+              <span className="bg-white/5 px-3 py-1 rounded-full text-xs text-slate-200">
+                {detailInfo.genre ? (
+                  detailInfo.genre
+                ) : (
+                  <Loader2 className="w-3 h-3 animate-spin inline text-slate-400" />
+                )}
               </span>
             </div>
             <div className="flex items-center">
               <span className="text-slate-400 w-16">발매일</span>
-              <span className="bg-slate-100 px-3 py-1 rounded-full text-xs">
-                {detailInfo.releaseDate}
+              <span className="bg-white/5 px-3 py-1 rounded-full text-xs text-slate-200">
+                {detailInfo.releaseDate ? (
+                  detailInfo.releaseDate
+                ) : (
+                  <Loader2 className="w-3 h-3 animate-spin inline text-slate-400" />
+                )}
               </span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 가수의 다른 노래 섹션 */}
       {artistTracks.length > 0 && (
         <section className="mb-10">
-          <h2 className="text-xl font-bold mb-4">
+          <h2 className="text-lg font-bold mb-4 ml-1">
             {track?.artist}의 다른 노래
           </h2>
           <Swiper
@@ -309,15 +351,78 @@ export default function Music() {
         </section>
       )}
 
-      {/* 플리 추가 버튼 */}
-      <div className="px-5 py-4 bg-slate-950/80 backdrop-blur-md bottom-0 left-0 right-0 z-20 mb-5">
-        <Link
-          to="/playlist"
-          state={{ addTrack: { ...track, genre: detailInfo.genre } }}
+      <div className="px-5 py-4 bg-slate-950/80 backdrop-blur-md bottom-0 left-0 right-0 z-20">
+        <button
+          onClick={handleOpenPlaylistModal}
           className="block w-full py-4 bg-white text-slate-900 font-bold rounded-full text-center shadow-xl active:scale-[0.99] transition"
         >
           내 playlist 추가하기 +
-        </Link>
+        </button>
+      </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md h-[50vh] bg-slate-900 rounded-t-[32px] p-6 flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-300">
+            <div className="flex justify-between items-center mb-5">
+              <h2 className="text-lg font-bold text-white">
+                플레이리스트 선택
+              </h2>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+              {myPlaylists.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-slate-400 text-sm">
+                  생성된 플레이리스트가 없습니다.
+                </div>
+              ) : (
+                myPlaylists.map((pl) => (
+                  <button
+                    key={pl.id}
+                    onClick={() => handleAddSongToPlaylist(pl)}
+                    className="w-full flex items-center gap-3.5 p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition text-left"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-slate-800 overflow-hidden shrink-0">
+                      {pl.coverImage ? (
+                        <img
+                          src={pl.coverImage}
+                          className="w-full h-full object-cover"
+                          alt=""
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-slate-700" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-sm text-white truncate">
+                        {pl.title}
+                      </p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {pl.songs?.length || 0}곡
+                      </p>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div
+        className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 pointer-events-none ${
+          showToast ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
+        }`}
+      >
+        <div className="flex items-center gap-2 px-5 py-3 bg-slate-900/95 border border-white/10 text-white text-xs font-semibold rounded-full shadow-2xl backdrop-blur-md">
+          <CheckCircle2 size={30} className="text-blue-500" />
+          <span>{toastMessage}</span>
+        </div>
       </div>
     </div>
   );
