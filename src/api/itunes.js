@@ -1,26 +1,21 @@
+// iTunes API CORS 우회를 위한 프록시
+const baseUrl = "https://api.allorigins.win/raw?url=";
 const targetUrl = "https://itunes.apple.com/";
 
 const fetchMusic = async (endpoint) => {
-  try {
-    const queryUrl = `${targetUrl}${endpoint}`;
+  const target = `${targetUrl}${endpoint}`;
+  const queryUrl = `${baseUrl}${encodeURIComponent(target)}`;
 
-    const response = await fetch(queryUrl);
+  const response = await fetch(queryUrl);
 
-    if (!response.ok) {
-      throw new Error(`iTunes API 요청 실패 (${response.status})`);
-    }
-
-    const data = await response.json();
-
-    return data;
-  } catch (error) {
-    console.error("iTunes API 오류:", error);
-
-    throw error;
+  if (!response.ok) {
+    throw new Error(`iTunes API 요청 실패 (${response.status})`);
   }
+
+  return response.json();
 };
 
-// 검색
+// 음악 검색
 export const getSearch = (keyword) =>
   fetchMusic(
     `search?term=${encodeURIComponent(
