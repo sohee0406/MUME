@@ -76,30 +76,30 @@ MUME는 음악 스트리밍 서비스가 아닌 **음악 추천 및 탐색 서�
 
   <tr>
     <td valign="top">
-      <img width="180" src="https://github.com/user-attachments/assets/76e07301-42eb-4b8f-ae8d-27c605970a60" alt="main" />
+      <img width="180" src="https://github.com/user-attachments/assets/76e07301-42eb-4b8f-ae8d-27c605970a60" alt="main" /> <br>
 메인화면
     </td>
     <td valign="top">
-      <img width="180" src="https://github.com/user-attachments/assets/c73ee865-9f31-468c-845d-4deb97c331c5" alt="search" />
+      <img width="180" src="https://github.com/user-attachments/assets/c73ee865-9f31-468c-845d-4deb97c331c5" alt="search" /> <br>
 검색
     </td>
     <td valign="top">
-      <img width="180" src="https://github.com/user-attachments/assets/626d8a98-24c1-42c7-af2c-0fdacda8ea7a" alt="favorite" />
+      <img width="180" src="https://github.com/user-attachments/assets/626d8a98-24c1-42c7-af2c-0fdacda8ea7a" alt="favorite" /> <br>
 좋아요
     </td>
   </tr>
 
   <tr>
     <td valign="top">
-      <img width="180" src="https://github.com/user-attachments/assets/c202695c-2206-42ee-bb86-72ff41d6a6be" alt="taste" />
+      <img width="180" src="https://github.com/user-attachments/assets/c202695c-2206-42ee-bb86-72ff41d6a6be" alt="taste" /> <br>
 취향
     </td>
     <td valign="top">
-      <img width="180" src="https://github.com/user-attachments/assets/e123ea4a-3847-450c-87b0-8f5de664cf90" alt="playlist" />
+      <img width="180" src="https://github.com/user-attachments/assets/e123ea4a-3847-450c-87b0-8f5de664cf90" alt="playlist" /> <br>
 플레이리스트
     </td>
     <td valign="top">
-      <img width="180" src="https://github.com/user-attachments/assets/e6ec9d47-99ce-4642-9dab-2a7d1fed5294" alt="music" />
+      <img width="180" src="https://github.com/user-attachments/assets/e6ec9d47-99ce-4642-9dab-2a7d1fed5294" alt="music" /> <br>
 음악상세
     </td>
   </tr>
