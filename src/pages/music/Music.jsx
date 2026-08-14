@@ -329,6 +329,7 @@ export default function Music() {
       <PageTitle title="MUSIC" />
 
       <div className="min-h-screen bg-slate-950 text-white px-5 pt-12 pb-28 relative">
+        {/* 음악 기본 정보 */}
         <div className="flex flex-col items-center text-center mb-10">
           <div className="w-64 h-64 rounded-[32px] overflow-hidden bg-slate-900 mb-6 shadow-2xl">
             <img
@@ -344,28 +345,26 @@ export default function Music() {
 
           <p className="text-sm text-slate-400 mb-6">{track.artist}</p>
 
-          <button
-  onClick={() => {
-    console.log("현재 track:", track);
-    console.log("detailInfo:", detailInfo);
-    console.log("previewUrl:", detailInfo.previewUrl || track.previewUrl);
-
-    navigate("/music/play", {
-      state: {
-        track: {
-          ...track,
-          previewUrl:
-            detailInfo.previewUrl || track.previewUrl || "",
-          genre: detailInfo.genre || track.genre || "Pop",
-        },
-      },
-    });
-  }}
-  className="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white font-bold rounded-full text-sm shadow-md transition active:scale-95"
->
-  <Play size={14} fill="currentColor" />
-  미리 듣기
-</button>
+          {/* 미리 듣기 + 좋아요 */}
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() =>
+                navigate("/music/play", {
+                  state: {
+                    track: {
+                      ...track,
+                      previewUrl:
+                        detailInfo.previewUrl || track.previewUrl || "",
+                      genre: detailInfo.genre || track.genre || "Pop",
+                    },
+                  },
+                })
+              }
+              className="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white font-bold rounded-full text-sm shadow-md transition active:scale-95"
+            >
+              <Play size={14} fill="currentColor" />
+              미리 듣기
+            </button>
 
             <button
               onClick={toggleLike}
@@ -380,6 +379,7 @@ export default function Music() {
           </div>
         </div>
 
+        {/* 음악 정보 */}
         <section className="mb-10">
           <h2 className="text-lg font-bold mb-4 ml-1">음악 정보</h2>
 
@@ -424,6 +424,7 @@ export default function Music() {
           </div>
         </section>
 
+        {/* 다른 노래 */}
         {artistTracks.length > 0 && (
           <section className="mb-10">
             <h2 className="text-lg font-bold mb-4 ml-1">
@@ -466,6 +467,7 @@ export default function Music() {
           </section>
         )}
 
+        {/* 플레이리스트 추가 */}
         <div className="px-5 py-4 bg-slate-950/80 backdrop-blur-md bottom-0 left-0 right-0 z-20">
           <button
             onClick={handleOpenPlaylistModal}
@@ -475,6 +477,7 @@ export default function Music() {
           </button>
         </div>
 
+        {/* 플레이리스트 모달 */}
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
             <div className="w-full max-w-md h-[50vh] bg-slate-900 rounded-t-[32px] p-6 flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-300">
@@ -532,6 +535,7 @@ export default function Music() {
           </div>
         )}
 
+        {/* 토스트 */}
         <div
           className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 pointer-events-none ${
             showToast ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
