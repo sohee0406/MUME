@@ -344,25 +344,28 @@ export default function Music() {
 
           <p className="text-sm text-slate-400 mb-6">{track.artist}</p>
 
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() =>
-                navigate("/music/play", {
-                  state: {
-                    track: {
-                      ...track,
-                      previewUrl:
-                        detailInfo.previewUrl || track.previewUrl || "",
-                      genre: detailInfo.genre || track.genre || "Pop",
-                    },
-                  },
-                })
-              }
-              className="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white font-bold rounded-full text-sm shadow-md transition active:scale-95"
-            >
-              <Play size={14} fill="currentColor" />
-              미리 듣기
-            </button>
+          <button
+  onClick={() => {
+    console.log("현재 track:", track);
+    console.log("detailInfo:", detailInfo);
+    console.log("previewUrl:", detailInfo.previewUrl || track.previewUrl);
+
+    navigate("/music/play", {
+      state: {
+        track: {
+          ...track,
+          previewUrl:
+            detailInfo.previewUrl || track.previewUrl || "",
+          genre: detailInfo.genre || track.genre || "Pop",
+        },
+      },
+    });
+  }}
+  className="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white font-bold rounded-full text-sm shadow-md transition active:scale-95"
+>
+  <Play size={14} fill="currentColor" />
+  미리 듣기
+</button>
 
             <button
               onClick={toggleLike}
