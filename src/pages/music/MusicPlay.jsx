@@ -8,37 +8,51 @@ import {
   Pause,
   SkipForward,
   RefreshCw,
+  Loader2,
+  X,
 } from "lucide-react";
+
 import { getSearch } from "../../api/itunes";
 import PageTitle from "../../components/PageTitle";
 
-export default function MusicPlayer() {
+export default function MusicPlay() {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
 
   const [track, setTrack] = useState(location.state?.track || null);
+
+  // 미리듣기 음원 주소
   const [previewUrl, setPreviewUrl] = useState("");
+
+  // 미리듣기 음원 확인 중인지
+  const [previewLoading, setPreviewLoading] = useState(true);
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(30);
   const [loading, setLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
 
+  // 음원 없음 팝업
+  const [showNoPreviewModal, setShowNoPreviewModal] = useState(false);
+
   const audioRef = useRef(null);
 
   useEffect(() => {
     const fetchMusicDetails = async () => {
       setLoading(true);
+      setPreviewLoading(true);
 
       try {
         let currentTrack = location.state?.track || track;
 
+        // 전달받은 음악 정보가 있는 경우
         if (currentTrack) {
           setTrack(currentTrack);
         }
 
-        // URL로 직접 들어온 경우
+        // URL로 직접 접근한 경우
         if (!currentTrack && id) {
           const searchData = await getSearch(id);
 
@@ -59,29 +73,40 @@ export default function MusicPlayer() {
           }
         }
 
+        // 음악 자체가 없는 경우
         if (!currentTrack) {
           setLoading(false);
+          setPreviewLoading(false);
           return;
         }
 
         /*
-         * Music 페이지에서 이미 previewUrl을 받아왔다면
-         * 그 값을 가장 먼저 사용합니다.
+         * 1. 이전 페이지에서 전달받은 previewUrl을 먼저 사용
          */
         let finalPreviewUrl = currentTrack.previewUrl || "";
 
         /*
-         * previewUrl이 없는 경우에만 iTunes API를 다시 조회합니다.
+         * 2. previewUrl이 없으면 iTunes에서 다시 검색
          */
         if (!finalPreviewUrl) {
-          const detailData = await getSearch(
-            `${currentTrack.artist} ${currentTrack.title}`,
-          );
+          try {
+            const detailData = await getSearch(
+              `${currentTrack.artist} ${currentTrack.title}`,
+            );
 
-          finalPreviewUrl = detailData?.results?.[0]?.previewUrl || "";
+            finalPreviewUrl = detailData?.results?.[0]?.previewUrl || "";
+          } catch (error) {
+            console.error("미리듣기 음원 조회 실패:", error);
+            finalPreviewUrl = "";
+          }
         }
 
         setPreviewUrl(finalPreviewUrl);
+
+        /*
+         * 음원 조회가 끝났으므로 로딩 종료
+         */
+        setPreviewLoading(false);
 
         // 좋아요 상태 확인
         const savedFavorites =
@@ -94,6 +119,9 @@ export default function MusicPlayer() {
         );
       } catch (err) {
         console.error("데이터 로드 실패:", err);
+
+        setPreviewUrl("");
+        setPreviewLoading(false);
       } finally {
         setLoading(false);
       }
@@ -144,38 +172,34 @@ export default function MusicPlayer() {
 
   // 재생 / 일시정지
   const togglePlay = async () => {
-    const audio = audioRef.current;
-
-    // 미리듣기 음원이 없는 경우
-    if (!previewUrl) {
-      alert("제공되는 미리듣기 음원이 없습니다.");
+    /*
+     * 아직 음원을 확인하는 중이면 아무 동작도 하지 않음
+     */
+    if (previewLoading) {
       return;
     }
 
-    // audio가 아직 만들어지지 않은 경우
+    /*
+     * 음원이 없는 경우 팝업 표시
+     */
+    if (!previewUrl) {
+      setShowNoPreviewModal(true);
+      return;
+    }
+
+    const audio = audioRef.current;
+
     if (!audio) {
-      alert("음원을 불러오는 중입니다. 잠시 후 다시 눌러주세요.");
+      setShowNoPreviewModal(true);
       return;
     }
 
     try {
       if (audio.paused) {
-        /*
-         * 중요:
-         * 사용자가 직접 재생 버튼을 클릭했을 때
-         * 바로 audio.play()를 실행합니다.
-         *
-         * 모바일 브라우저의 자동재생 정책을
-         * 우회하는 것이 아니라,
-         * 사용자의 클릭을 정상적인 재생 동작으로
-         * 인식시키는 방식입니다.
-         */
         await audio.play();
-
         setIsPlaying(true);
       } else {
         audio.pause();
-
         setIsPlaying(false);
       }
     } catch (error) {
@@ -183,12 +207,14 @@ export default function MusicPlayer() {
 
       setIsPlaying(false);
 
-      alert("음원 재생에 실패했습니다. 다시 눌러주세요.");
+      setShowNoPreviewModal(true);
     }
   };
 
   // 재생 위치 변경
   const handleProgressChange = (e) => {
+    if (!previewUrl) return;
+
     const newTime = parseFloat(e.target.value);
 
     setCurrentTime(newTime);
@@ -212,8 +238,10 @@ export default function MusicPlayer() {
       <>
         <PageTitle title="MUSICPLAYER" />
 
-        <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
-          MUME 플레이어 로딩 중...
+        <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+
+          <p className="text-sm text-slate-400">MUME 플레이어 로딩 중...</p>
         </div>
       </>
     );
@@ -285,7 +313,9 @@ export default function MusicPlayer() {
             }}
             onError={(e) => {
               console.error("오디오 로드 오류:", e);
+
               setIsPlaying(false);
+              setPreviewUrl("");
             }}
           />
         )}
@@ -360,7 +390,12 @@ export default function MusicPlayer() {
             max={duration}
             value={Math.min(currentTime, duration)}
             onChange={handleProgressChange}
-            className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+            disabled={!previewUrl || previewLoading}
+            className={`w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500 ${
+              !previewUrl || previewLoading
+                ? "opacity-50 cursor-not-allowed"
+                : ""
+            }`}
             style={{
               background: `linear-gradient(
                 to right,
@@ -380,6 +415,7 @@ export default function MusicPlayer() {
 
         {/* 재생 버튼 */}
         <div className="w-full max-w-xs flex items-center justify-between mb-8">
+          {/* 이전 */}
           <button
             type="button"
             className="text-slate-300 hover:text-white transition active:scale-95"
@@ -387,23 +423,28 @@ export default function MusicPlayer() {
             <SkipBack size={32} fill="currentColor" />
           </button>
 
+          {/* 중앙 재생 버튼 */}
           <button
             type="button"
             onClick={togglePlay}
-            disabled={!previewUrl}
             className={`w-16 h-16 flex items-center justify-center rounded-full transition active:scale-95 shadow-lg ${
-              previewUrl
-                ? "bg-white text-slate-900 hover:scale-105"
-                : "bg-slate-600 text-slate-400 cursor-not-allowed"
+              previewLoading
+                ? "bg-slate-600 text-slate-400 cursor-wait"
+                : previewUrl
+                  ? "bg-white text-slate-900 hover:scale-105"
+                  : "bg-slate-600 text-slate-300"
             }`}
           >
-            {isPlaying ? (
+            {previewLoading ? (
+              <Loader2 size={26} className="animate-spin" />
+            ) : isPlaying ? (
               <Pause size={28} fill="currentColor" />
             ) : (
               <Play size={28} fill="currentColor" className="ml-1" />
             )}
           </button>
 
+          {/* 다음 */}
           <button
             type="button"
             className="text-slate-300 hover:text-white transition active:scale-95"
@@ -412,13 +453,66 @@ export default function MusicPlayer() {
           </button>
         </div>
 
-        {/* 30초 미리듣기 안내 */}
+        {/* 안내 문구 */}
         <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-10">
           <RefreshCw size={12} />
 
-          <span>30초 미리듣기가 제공됩니다</span>
+          <span>
+            {previewLoading
+              ? "미리듣기 음원을 확인하고 있습니다"
+              : previewUrl
+                ? "30초 미리듣기가 제공됩니다"
+                : "미리듣기 음원이 제공되지 않습니다"}
+          </span>
         </div>
       </div>
+
+      {/* 음원 없음 팝업 */}
+      {showNoPreviewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-6">
+          <div className="w-full max-w-sm bg-slate-900 border border-white/10 rounded-[28px] p-6 shadow-2xl">
+            {/* 닫기 */}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowNoPreviewModal(false)}
+                className="text-slate-400 hover:text-white transition"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* 내용 */}
+            <div className="flex flex-col items-center text-center px-3 pb-3">
+              <div className="w-14 h-14 rounded-full bg-slate-700 flex items-center justify-center mb-4">
+                <Play
+                  size={24}
+                  className="text-slate-400"
+                  fill="currentColor"
+                />
+              </div>
+
+              <h2 className="text-lg font-bold text-white mb-2">
+                미리듣기 음원이 없습니다
+              </h2>
+
+              <p className="text-sm text-slate-400 leading-relaxed">
+                아쉽지만 이 음악은
+                <br />
+                iTunes에서 제공하는 미리듣기 음원이 없습니다.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setShowNoPreviewModal(false)}
+                className="w-full mt-6 py-3.5 bg-white text-slate-900 rounded-full font-bold text-sm active:scale-95 transition"
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
