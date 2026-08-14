@@ -32,8 +32,13 @@ export default function MusicPlayer() {
       setLoading(true);
 
       try {
-        let currentTrack = track;
+        let currentTrack = location.state?.track || track;
 
+        if (currentTrack) {
+          setTrack(currentTrack);
+        }
+
+        // URL로 직접 들어온 경우
         if (!currentTrack && id) {
           const searchData = await getSearch(id);
 
@@ -54,26 +59,39 @@ export default function MusicPlayer() {
           }
         }
 
-        if (currentTrack) {
+        if (!currentTrack) {
+          setLoading(false);
+          return;
+        }
+
+        /*
+         * Music 페이지에서 이미 previewUrl을 받아왔다면
+         * 그 값을 가장 먼저 사용합니다.
+         */
+        let finalPreviewUrl = currentTrack.previewUrl || "";
+
+        /*
+         * previewUrl이 없는 경우에만 iTunes API를 다시 조회합니다.
+         */
+        if (!finalPreviewUrl) {
           const detailData = await getSearch(
             `${currentTrack.artist} ${currentTrack.title}`,
           );
 
-          setPreviewUrl(
-            detailData?.results?.[0]?.previewUrl ||
-              currentTrack.previewUrl ||
-              "",
-          );
-
-          const savedFavorites =
-            JSON.parse(localStorage.getItem("favorites")) || [];
-
-          setIsLiked(
-            savedFavorites.some(
-              (fav) => String(fav.id) === String(currentTrack.id),
-            ),
-          );
+          finalPreviewUrl = detailData?.results?.[0]?.previewUrl || "";
         }
+
+        setPreviewUrl(finalPreviewUrl);
+
+        // 좋아요 상태 확인
+        const savedFavorites =
+          JSON.parse(localStorage.getItem("favorites")) || [];
+
+        setIsLiked(
+          savedFavorites.some(
+            (fav) => String(fav.id) === String(currentTrack.id),
+          ),
+        );
       } catch (err) {
         console.error("데이터 로드 실패:", err);
       } finally {
@@ -82,7 +100,16 @@ export default function MusicPlayer() {
     };
 
     fetchMusicDetails();
-  }, [id, track]);
+
+    // 페이지를 나갈 때 오디오 정리
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.removeAttribute("src");
+        audioRef.current.load();
+      }
+    };
+  }, [id, location.state]);
 
   // 좋아요
   const handleLikeToggle = () => {
@@ -116,26 +143,47 @@ export default function MusicPlayer() {
   };
 
   // 재생 / 일시정지
-  const togglePlay = () => {
+  const togglePlay = async () => {
+    const audio = audioRef.current;
+
+    // 미리듣기 음원이 없는 경우
     if (!previewUrl) {
       alert("제공되는 미리듣기 음원이 없습니다.");
       return;
     }
 
-    if (!audioRef.current) return;
+    // audio가 아직 만들어지지 않은 경우
+    if (!audio) {
+      alert("음원을 불러오는 중입니다. 잠시 후 다시 눌러주세요.");
+      return;
+    }
 
-    if (isPlaying) {
-      audioRef.current.pause();
+    try {
+      if (audio.paused) {
+        /*
+         * 중요:
+         * 사용자가 직접 재생 버튼을 클릭했을 때
+         * 바로 audio.play()를 실행합니다.
+         *
+         * 모바일 브라우저의 자동재생 정책을
+         * 우회하는 것이 아니라,
+         * 사용자의 클릭을 정상적인 재생 동작으로
+         * 인식시키는 방식입니다.
+         */
+        await audio.play();
+
+        setIsPlaying(true);
+      } else {
+        audio.pause();
+
+        setIsPlaying(false);
+      }
+    } catch (error) {
+      console.error("음원 재생 실패:", error);
+
       setIsPlaying(false);
-    } else {
-      audioRef.current
-        .play()
-        .then(() => {
-          setIsPlaying(true);
-        })
-        .catch(() => {
-          alert("재생에 실패했습니다.");
-        });
+
+      alert("음원 재생에 실패했습니다. 다시 눌러주세요.");
     }
   };
 
@@ -199,7 +247,6 @@ export default function MusicPlayer() {
 
   return (
     <>
-      {/* 브라우저 탭 제목 */}
       <PageTitle title="MUSICPLAYER" />
 
       <div className="min-h-screen bg-slate-950 text-white px-5 pt-6 pb-10 flex flex-col items-center">
@@ -208,11 +255,8 @@ export default function MusicPlayer() {
           <audio
             ref={audioRef}
             src={previewUrl}
-            onTimeUpdate={() => {
-              if (audioRef.current) {
-                setCurrentTime(audioRef.current.currentTime);
-              }
-            }}
+            preload="metadata"
+            playsInline
             onLoadedMetadata={() => {
               if (audioRef.current) {
                 const audioDuration = audioRef.current.duration;
@@ -224,9 +268,24 @@ export default function MusicPlayer() {
                 );
               }
             }}
+            onTimeUpdate={() => {
+              if (audioRef.current) {
+                setCurrentTime(Math.min(audioRef.current.currentTime, 30));
+              }
+            }}
+            onPlay={() => {
+              setIsPlaying(true);
+            }}
+            onPause={() => {
+              setIsPlaying(false);
+            }}
             onEnded={() => {
               setIsPlaying(false);
               setCurrentTime(0);
+            }}
+            onError={(e) => {
+              console.error("오디오 로드 오류:", e);
+              setIsPlaying(false);
             }}
           />
         )}
@@ -331,7 +390,12 @@ export default function MusicPlayer() {
           <button
             type="button"
             onClick={togglePlay}
-            className="w-16 h-16 flex items-center justify-center bg-white text-slate-900 rounded-full hover:scale-105 transition active:scale-95 shadow-lg"
+            disabled={!previewUrl}
+            className={`w-16 h-16 flex items-center justify-center rounded-full transition active:scale-95 shadow-lg ${
+              previewUrl
+                ? "bg-white text-slate-900 hover:scale-105"
+                : "bg-slate-600 text-slate-400 cursor-not-allowed"
+            }`}
           >
             {isPlaying ? (
               <Pause size={28} fill="currentColor" />
