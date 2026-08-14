@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Heart } from "lucide-react";
+import PageTitle from "../../components/PageTitle";
 
 export default function Favorite() {
+  <PageTitle title={"FAVORITE"} />;
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState("songs");

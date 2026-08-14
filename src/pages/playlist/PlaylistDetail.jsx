@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   MoreHorizontal,
   Heart,
@@ -10,35 +10,76 @@ import {
   Edit3,
 } from "lucide-react";
 import { useScrollTop } from "../../lib/useScrollTop";
+import PageTitle from "../../components/PageTitle";
 
-export default function PlaylistDetail({ playlist, onUpdatePlaylist }) {
+export default function PlaylistDetail() {
   useScrollTop();
+
   const navigate = useNavigate();
+  const { id } = useParams();
+
   const [isLiked, setIsLiked] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [currentPlaylist, setCurrentPlaylist] = useState(playlist);
+  const [currentPlaylist, setCurrentPlaylist] = useState(null);
 
   useEffect(() => {
-    setCurrentPlaylist(playlist);
-  }, [playlist]);
+    const savedPlaylists = localStorage.getItem("mume_playlists");
+
+    if (!savedPlaylists) {
+      setCurrentPlaylist(null);
+      return;
+    }
+
+    try {
+      const playlists = JSON.parse(savedPlaylists);
+
+      const targetPlaylist = playlists.find(
+        (playlist) => String(playlist.id) === String(id),
+      );
+
+      setCurrentPlaylist(targetPlaylist || null);
+    } catch (error) {
+      console.error("플레이리스트 불러오기 실패:", error);
+      setCurrentPlaylist(null);
+    }
+  }, [id]);
 
   useEffect(() => {
     if (!currentPlaylist) return;
+
     const savedPlaylists = localStorage.getItem("liked_playlists");
-    if (savedPlaylists) {
+
+    if (!savedPlaylists) {
+      setIsLiked(false);
+      return;
+    }
+
+    try {
       const likedList = JSON.parse(savedPlaylists);
+
       setIsLiked(
-        likedList.some((p) => String(p.id) === String(currentPlaylist.id)),
+        likedList.some(
+          (playlist) => String(playlist.id) === String(currentPlaylist.id),
+        ),
       );
+    } catch (error) {
+      console.error("좋아요 플레이리스트 확인 실패:", error);
+      setIsLiked(false);
     }
   }, [currentPlaylist]);
 
   if (!currentPlaylist) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#0F172A] text-white">
-        플레이리스트를 찾을 수 없습니다.
-      </div>
+      <main className="flex-1 bg-[#0F172A] text-white flex flex-col">
+        <PageTitle title="PLAYLIST" />
+
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-gray-400 text-sm">
+            플레이리스트를 찾을 수 없습니다.
+          </p>
+        </div>
+      </main>
     );
   }
 
@@ -72,6 +113,7 @@ export default function PlaylistDetail({ playlist, onUpdatePlaylist }) {
 
   const handlePlayTrack = (song) => {
     if (isEditing) return;
+
     navigate(`/music/${song.id}`, {
       state: {
         track: {
@@ -88,51 +130,88 @@ export default function PlaylistDetail({ playlist, onUpdatePlaylist }) {
 
   const handleToggleLikePlaylist = () => {
     const savedPlaylists = localStorage.getItem("liked_playlists");
+
     let likedList = savedPlaylists ? JSON.parse(savedPlaylists) : [];
 
     if (isLiked) {
       likedList = likedList.filter(
-        (p) => String(p.id) !== String(currentPlaylist.id),
+        (playlist) => String(playlist.id) !== String(currentPlaylist.id),
       );
+
       setIsLiked(false);
     } else {
-      likedList.push({
+      const newLikedPlaylist = {
         id: currentPlaylist.id,
         title: currentPlaylist.title,
         description: currentPlaylist.description,
         coverImage: currentPlaylist.coverImage || "",
-        songs: currentPlaylist.songs,
-      });
+        songs: currentPlaylist.songs || [],
+      };
+
+      likedList.push(newLikedPlaylist);
+
       setIsLiked(true);
     }
+
     localStorage.setItem("liked_playlists", JSON.stringify(likedList));
   };
 
   const handleDeleteSong = (songId) => {
     const updatedSongs = currentPlaylist.songs.filter(
-      (song) => song.id !== songId,
+      (song) => String(song.id) !== String(songId),
     );
-    const updatedPlaylist = { ...currentPlaylist, songs: updatedSongs };
 
-    setCurrentPlaylist(updatedPlaylist);
-    if (onUpdatePlaylist) onUpdatePlaylist(updatedPlaylist);
-
-    const updateStorageKey = (key) => {
-      const saved = localStorage.getItem(key);
-      if (saved) {
-        const list = JSON.parse(saved).map((p) =>
-          String(p.id) === String(currentPlaylist.id) ? updatedPlaylist : p,
-        );
-        localStorage.setItem(key, JSON.stringify(list));
-      }
+    const updatedPlaylist = {
+      ...currentPlaylist,
+      songs: updatedSongs,
     };
 
-    updateStorageKey("mume_playlists");
-    updateStorageKey("liked_playlists");
+    setCurrentPlaylist(updatedPlaylist);
+
+    const savedPlaylists = localStorage.getItem("mume_playlists");
+
+    if (savedPlaylists) {
+      try {
+        const playlists = JSON.parse(savedPlaylists);
+
+        const updatedPlaylists = playlists.map((playlist) =>
+          String(playlist.id) === String(currentPlaylist.id)
+            ? updatedPlaylist
+            : playlist,
+        );
+
+        localStorage.setItem(
+          "mume_playlists",
+          JSON.stringify(updatedPlaylists),
+        );
+      } catch (error) {
+        console.error("플레이리스트 저장 실패:", error);
+      }
+    }
+
+    const savedLikedPlaylists = localStorage.getItem("liked_playlists");
+
+    if (savedLikedPlaylists) {
+      try {
+        const likedList = JSON.parse(savedLikedPlaylists);
+
+        const updatedLiked = likedList.map((playlist) =>
+          String(playlist.id) === String(currentPlaylist.id)
+            ? updatedPlaylist
+            : playlist,
+        );
+
+        localStorage.setItem("liked_playlists", JSON.stringify(updatedLiked));
+      } catch (error) {
+        console.error("좋아요 플레이리스트 저장 실패:", error);
+      }
+    }
   };
 
   return (
     <main className="flex-1 bg-[#0F172A] text-white overflow-y-auto relative [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <PageTitle title="PLAYLIST" />
+
       <div className="flex justify-end items-center px-5 pt-4 relative">
         <div className="relative">
           <button
@@ -141,12 +220,14 @@ export default function PlaylistDetail({ playlist, onUpdatePlaylist }) {
           >
             <MoreHorizontal size={24} strokeWidth={3} />
           </button>
+
           {showMenu && (
             <>
               <div
                 className="fixed inset-0 z-40"
                 onClick={() => setShowMenu(false)}
               />
+
               <div className="absolute right-0 mt-2 w-40 bg-[#1E293B]/95 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl py-2 z-50 overflow-hidden">
                 <button
                   onClick={() => {
@@ -168,15 +249,18 @@ export default function PlaylistDetail({ playlist, onUpdatePlaylist }) {
         <div className="mx-5 mt-4 bg-blue-500/10 border border-blue-500/30 rounded-2xl px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+
             <span className="text-[13px] text-blue-300 font-medium">
               삭제할 노래를 선택해주세요
             </span>
           </div>
+
           <button
             onClick={() => setIsEditing(false)}
             className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[12px] font-bold active:scale-95 transition-all"
           >
-            <X size={14} /> 완료
+            <X size={14} />
+            완료
           </button>
         </div>
       )}
@@ -193,13 +277,17 @@ export default function PlaylistDetail({ playlist, onUpdatePlaylist }) {
             <div className="w-full h-full bg-white" />
           )}
         </div>
+
         <h2 className="text-[25px] leading-tight font-bold mb-1">
           {currentPlaylist.title || "플리 이름"}
         </h2>
+
         <p className="text-[14px] text-[#d9d9d9] mb-1">
           {currentPlaylist.description || "플레이리스트 설명"}
         </p>
+
         <p className="text-[13px] text-[#A5A9B4] mb-4">{songs.length}곡</p>
+
         {displayGenres.length > 0 && (
           <div className="flex items-center justify-center gap-1.5 mb-5">
             {displayGenres.map((genre, index) => (
@@ -212,6 +300,7 @@ export default function PlaylistDetail({ playlist, onUpdatePlaylist }) {
             ))}
           </div>
         )}
+
         <div className="flex items-center gap-4 mb-8">
           <button
             onClick={handleToggleLikePlaylist}
@@ -226,6 +315,7 @@ export default function PlaylistDetail({ playlist, onUpdatePlaylist }) {
             />
             좋아요
           </button>
+
           <button className="flex items-center gap-1.5 px-4 py-1.5 bg-white text-[#111827] rounded-full text-[12px] font-medium active:scale-95 transition-transform">
             <Shuffle size={14} strokeWidth={2} />
             랜덤 미리듣기
@@ -258,14 +348,17 @@ export default function PlaylistDetail({ playlist, onUpdatePlaylist }) {
                     <div className="w-full h-full bg-white" />
                   )}
                 </div>
+
                 <div className="min-w-0 flex-1">
                   <p className="text-[16px] font-bold text-white truncate">
                     {song.artist}
                   </p>
+
                   <p className="text-[13px] text-[#A5A9B4] truncate mt-1">
                     {song.title}
                   </p>
                 </div>
+
                 {isEditing ? (
                   <button
                     onClick={() => handleDeleteSong(song.id)}

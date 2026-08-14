@@ -3,10 +3,12 @@ import Section_2 from "./components/Section_2";
 import Section_3 from "./components/Seciton_3";
 import Section_4 from "./components/Seciton_4";
 import Section_5 from "./components/Section_5";
+import PageTitle from "../../components/PageTitle";
 
 export default function Home() {
   return (
     <div className="mb-[50px]">
+      <PageTitle title={"HOME"} />
       <Section_1 />
       <Section_2 />
       <Section_3 />

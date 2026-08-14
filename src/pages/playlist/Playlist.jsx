@@ -2,78 +2,99 @@ import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { MoreVertical, Edit2, Trash2, CheckCircle2 } from "lucide-react";
 import PlaylistFix from "./PlaylistFix";
-import PlaylistDetail from "./PlaylistDetail";
+import PageTitle from "../../components/PageTitle";
 
 export default function Playlist() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [view, setView] = useState("list");
-  const [editingPlaylist, setEditingPlaylist] = useState(null);
-
   const addTrack =
     location.state?.selectedTrack || location.state?.addTrack || null;
+
   const isSelectionMode = addTrack !== null;
 
   const [playlists, setPlaylists] = useState(() => {
     const savedPlaylists = localStorage.getItem("mume_playlists");
+
     return savedPlaylists ? JSON.parse(savedPlaylists) : [];
   });
 
+  const [isCreating, setIsCreating] = useState(false);
+  const [editingPlaylist, setEditingPlaylist] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
 
+  const menuRef = useRef(null);
+
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
   const [targetDeleteId, setTargetDeleteId] = useState(null);
 
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
-  const [alertMessage, setAlertMessage] = useState({ title: "", desc: "" });
 
-  const menuRef = useRef(null);
+  const [alertMessage, setAlertMessage] = useState({
+    title: "",
+    desc: "",
+  });
 
   useEffect(() => {
     localStorage.setItem("mume_playlists", JSON.stringify(playlists));
   }, [playlists]);
 
   useEffect(() => {
-    if (location.state?.selectedPlaylist) {
-      const targetPlaylist = location.state.selectedPlaylist;
-      setEditingPlaylist(targetPlaylist);
-      setView("detail");
+    if (!location.state?.selectedPlaylist) {
+      return;
+    }
 
-      navigate(location.pathname, { replace: true, state: {} });
+    const targetPlaylist = location.state.selectedPlaylist;
+
+    if (targetPlaylist?.id) {
+      navigate(`/playlist/${targetPlaylist.id}`, {
+        replace: true,
+        state: {},
+      });
+    } else {
+      navigate(location.pathname, {
+        replace: true,
+        state: {},
+      });
     }
   }, [location.state, navigate, location.pathname]);
 
   const toggleMenu = (id, e) => {
     e.preventDefault();
     e.stopPropagation();
+
     setOpenMenuId(openMenuId === id ? null : id);
   };
 
   const handleOpenCreate = () => {
     setEditingPlaylist(null);
-    setView("fix");
+    setIsCreating(true);
+    setOpenMenuId(null);
   };
 
   const handleOpenEdit = (playlist, e) => {
     e.preventDefault();
     e.stopPropagation();
+
     setEditingPlaylist(playlist);
-    setView("fix");
+    setIsCreating(true);
     setOpenMenuId(null);
   };
 
   const handlePlaylistClick = (playlist) => {
     if (isSelectionMode) {
       executeAddSong(playlist, addTrack);
-    } else {
-      setEditingPlaylist(playlist);
-      setView("detail");
+      return;
     }
+
+    navigate(`/playlist/${playlist.id}`);
   };
 
   const executeAddSong = (targetPlaylist, track) => {
-    if (!targetPlaylist || !track) return;
+    if (!targetPlaylist || !track) {
+      return;
+    }
 
     const alreadyExists = (targetPlaylist.songs || []).some(
       (song) => String(song.id) === String(track.id),
@@ -81,9 +102,10 @@ export default function Playlist() {
 
     if (alreadyExists) {
       setAlertMessage({
-        title: "곡 추가 실패",
-        desc: "이미 이 플레이리스트에\n추가된 음악입니다.",
+        title: "이미 추가된 곡",
+        desc: `"${track.title}"이(가)\n"${targetPlaylist.title}"에 이미 추가되어 있습니다.`,
       });
+
       setIsAlertModalOpen(true);
       return;
     }
@@ -100,21 +122,19 @@ export default function Playlist() {
     setPlaylists((prevPlaylists) =>
       prevPlaylists.map((playlist) =>
         String(playlist.id) === String(targetPlaylist.id)
-          ? { ...playlist, songs: [...(playlist.songs || []), newSong] }
+          ? {
+              ...playlist,
+              songs: [...(playlist.songs || []), newSong],
+            }
           : playlist,
       ),
-    );
-
-    setEditingPlaylist((prev) =>
-      prev && String(prev.id) === String(targetPlaylist.id)
-        ? { ...prev, songs: [...(prev.songs || []), newSong] }
-        : prev,
     );
 
     setAlertMessage({
       title: "곡 추가 완료",
       desc: `"${track.title}"이(가)\n"${targetPlaylist.title}"에 저장되었습니다.`,
     });
+
     setIsAlertModalOpen(true);
   };
 
@@ -122,8 +142,10 @@ export default function Playlist() {
     setIsAlertModalOpen(false);
 
     if (alertMessage.title === "곡 추가 완료") {
-      navigate(location.pathname, { replace: true, state: {} });
-      setView("list");
+      navigate(location.pathname, {
+        replace: true,
+        state: {},
+      });
     }
   };
 
@@ -137,7 +159,7 @@ export default function Playlist() {
                 title: data.title,
                 description: data.description,
                 coverImage: data.coverImage,
-                // 기존 songs 데이터가 유실되지 않도록 유지합니다.
+                songs: playlist.songs || [],
               }
             : playlist,
         ),
@@ -151,21 +173,32 @@ export default function Playlist() {
         songCount: 0,
         songs: [],
       };
+
       setPlaylists((prevPlaylists) => [...prevPlaylists, newPlaylist]);
     }
-    setView("list");
+
+    setEditingPlaylist(null);
+    setIsCreating(false);
+  };
+
+  const handleCloseFix = () => {
+    setEditingPlaylist(null);
+    setIsCreating(false);
   };
 
   const openDeleteModal = (id, e) => {
     e.preventDefault();
     e.stopPropagation();
+
     setTargetDeleteId(id);
     setIsDeleteModalOpen(true);
     setOpenMenuId(null);
   };
 
   const confirmDelete = () => {
-    if (targetDeleteId === null) return;
+    if (targetDeleteId === null) {
+      return;
+    }
 
     setPlaylists((prevPlaylists) =>
       prevPlaylists.filter(
@@ -174,15 +207,21 @@ export default function Playlist() {
     );
 
     const savedLikedPlaylists = localStorage.getItem("liked_playlists");
+
     if (savedLikedPlaylists) {
-      const likedList = JSON.parse(savedLikedPlaylists);
-      const updatedLiked = likedList.filter(
-        (playlist) => String(playlist.id) !== String(targetDeleteId),
-      );
-      localStorage.setItem("liked_playlists", JSON.stringify(updatedLiked));
+      try {
+        const likedList = JSON.parse(savedLikedPlaylists);
+
+        const updatedLiked = likedList.filter(
+          (playlist) => String(playlist.id) !== String(targetDeleteId),
+        );
+
+        localStorage.setItem("liked_playlists", JSON.stringify(updatedLiked));
+      } catch (error) {
+        console.error("좋아요 플레이리스트 삭제 실패:", error);
+      }
     }
 
-    setEditingPlaylist(null);
     closeDeleteModal();
   };
 
@@ -197,18 +236,35 @@ export default function Playlist() {
         setOpenMenuId(null);
       }
     };
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
+  if (isCreating) {
+    return (
+      <PlaylistFix
+        initialData={editingPlaylist}
+        onBack={handleCloseFix}
+        onSave={handleSavePlaylist}
+      />
+    );
+  }
+
   return (
-    <div className="flex flex-col h-screen bg-app-bg text-white max-w-md mx-auto shadow-2xl relative font-sans overflow-hidden">
-      {view === "list" && (
+    <>
+      <PageTitle title="PLAYLIST" />
+
+      <div className="flex flex-col h-full bg-app-bg text-white max-w-md mx-auto relative font-sans overflow-hidden">
         <main className="flex-1 flex flex-col px-5 pt-8 overflow-hidden">
           <div className="shrink-0">
             <h2 className="text-2xl font-bold mb-1 text-ellipsis overflow-hidden">
               {isSelectionMode ? "플리 선택하기" : "MY PLAYLIST"}
             </h2>
+
             <p className="text-gray-400 text-sm mb-8">
               {isSelectionMode
                 ? `"${addTrack.title}"을(를) 어디에 담을까요?`
@@ -216,7 +272,6 @@ export default function Playlist() {
             </p>
           </div>
 
-          {/* 스크롤바 숨김 속성 추가 */}
           <div className="flex-1 overflow-y-auto mb-6 pr-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {playlists.length === 0 ? (
               <div className="flex flex-col gap-10">
@@ -225,6 +280,7 @@ export default function Playlist() {
                     생성된 플레이 리스트가 없습니다
                   </p>
                 </div>
+
                 <button
                   onClick={handleOpenCreate}
                   className="w-full bg-white rounded-full py-4 text-[#111111] font-bold text-base shadow-md active:scale-[0.98] transition-all"
@@ -259,6 +315,7 @@ export default function Playlist() {
                         <h3 className="text-base font-bold text-white mb-1">
                           {playlist.title}
                         </h3>
+
                         <p className="text-gray-400 text-sm">
                           {(playlist.songs || []).length}곡
                         </p>
@@ -285,14 +342,18 @@ export default function Playlist() {
                               onClick={(e) => handleOpenEdit(playlist, e)}
                               className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white hover:bg-white/5 active:bg-white/10 transition"
                             >
-                              <Edit2 className="w-4 h-4 text-gray-400" /> 수정
+                              <Edit2 className="w-4 h-4 text-gray-400" />
+                              수정
                             </button>
+
                             <div className="h-px bg-white/5" />
+
                             <button
                               onClick={(e) => openDeleteModal(playlist.id, e)}
                               className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 active:bg-red-500/20 transition"
                             >
-                              <Trash2 className="w-4 h-4" /> 삭제
+                              <Trash2 className="w-4 h-4" />
+                              삭제
                             </button>
                           </div>
                         )}
@@ -303,7 +364,7 @@ export default function Playlist() {
 
                 <button
                   onClick={handleOpenCreate}
-                  className="w-full bg-[#dcdcdc] rounded-full py-4 text-[#111111] font-bold text-base shadow-md active:scale-[0.98] transition-transform mt-4"
+                  className="w-full bg-[white] rounded-full py-4 text-[#00021f] font-bold text-base shadow-md active:scale-[0.98] transition-transform mt-4"
                 >
                   내 playlist 추가하기 +
                 </button>
@@ -311,82 +372,68 @@ export default function Playlist() {
             )}
           </div>
         </main>
-      )}
 
-      {view === "fix" && (
-        <PlaylistFix
-          initialData={editingPlaylist}
-          onBack={() => setView("list")}
-          onSave={handleSavePlaylist}
-        />
-      )}
+        {isAlertModalOpen && (
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-[4px] z-50 flex items-center justify-center p-6">
+            <div className="bg-white w-full max-w-[280px] rounded-[24px] p-6 shadow-2xl text-center flex flex-col items-center">
+              <CheckCircle2
+                className={`w-12 h-12 mb-3 ${
+                  alertMessage.title.includes("실패")
+                    ? "text-amber-500"
+                    : "text-emerald-500"
+                }`}
+              />
 
-      {view === "detail" && (
-        <PlaylistDetail
-          playlist={playlists.find((p) => p.id === editingPlaylist?.id)}
-          onBack={() => setView("list")}
-          onUpdatePlaylist={(updatedPlaylist) => {
-            setEditingPlaylist(updatedPlaylist);
+              <h3 className="text-[17px] font-bold text-[#111111] mb-2">
+                {alertMessage.title}
+              </h3>
 
-            setPlaylists((prev) =>
-              prev.map((p) =>
-                p.id === updatedPlaylist.id ? updatedPlaylist : p,
-              ),
-            );
-          }}
-        />
-      )}
+              <p className="text-[#666666] text-xs font-medium mb-6 leading-relaxed whitespace-pre-line">
+                {alertMessage.desc}
+              </p>
 
-      {isAlertModalOpen && (
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-[4px] z-50 flex items-center justify-center p-6">
-          <div className="bg-white w-full max-w-[280px] rounded-[24px] p-6 shadow-2xl text-center flex flex-col items-center">
-            <CheckCircle2
-              className={`w-12 h-12 mb-3 ${alertMessage.title.includes("실패") ? "text-amber-500" : "text-emerald-500"}`}
-            />
-            <h3 className="text-[17px] font-bold text-[#111111] mb-2">
-              {alertMessage.title}
-            </h3>
-            <p className="text-[#666666] text-xs font-medium mb-6 leading-relaxed whitespace-pre-line">
-              {alertMessage.desc}
-            </p>
-            <button
-              onClick={closeAlertModal}
-              className="w-full bg-[#111111] text-white rounded-xl py-3 text-sm font-bold transition-all active:scale-[0.98]"
-            >
-              확인
-            </button>
-          </div>
-        </div>
-      )}
-
-      {isDeleteModalOpen && (
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-[4px] z-50 flex items-center justify-center p-6">
-          <div className="bg-white w-full max-w-[280px] rounded-[24px] p-6 shadow-2xl text-center">
-            <h3 className="text-[17px] font-bold text-[#111111] mb-2">
-              플레이리스트 삭제
-            </h3>
-            <p className="text-[#666666] text-xs font-medium mb-6 leading-relaxed">
-              정말 이 플레이리스트를
-              <br />
-              삭제하시겠습니까?
-            </p>
-            <div className="flex gap-2.5">
               <button
-                onClick={closeDeleteModal}
-                className="flex-1 bg-[#f4f4f4] text-[#555555] rounded-xl py-3 text-sm font-bold transition-all"
+                onClick={closeAlertModal}
+                className="w-full bg-[#111111] text-white rounded-xl py-3 text-sm font-bold transition-all active:scale-[0.98]"
               >
-                취소
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="flex-1 bg-[#fff0f0] text-[#ff4d4d] rounded-xl py-3 text-sm font-bold transition-all"
-              >
-                삭제
+                확인
               </button>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+
+        {isDeleteModalOpen && (
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-[4px] z-50 flex items-center justify-center p-6">
+            <div className="bg-white w-full max-w-[280px] rounded-[24px] p-6 shadow-2xl text-center">
+              <h3 className="text-[17px] font-bold text-[#111111] mb-2">
+                플레이리스트 삭제
+              </h3>
+
+              <p className="text-[#666666] text-xs font-medium mb-6 leading-relaxed">
+                정말 이 플레이리스트를
+                <br />
+                삭제하시겠습니까?
+              </p>
+
+              <div className="flex gap-2.5">
+                <button
+                  onClick={closeDeleteModal}
+                  className="flex-1 bg-[#f4f4f4] text-[#555555] rounded-xl py-3 text-sm font-bold transition-all"
+                >
+                  취소
+                </button>
+
+                <button
+                  onClick={confirmDelete}
+                  className="flex-1 bg-[#fff0f0] text-[#ff4d4d] rounded-xl py-3 text-sm font-bold transition-all"
+                >
+                  삭제
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 }

@@ -62,7 +62,7 @@ export default function Section_2() {
     <section className="w-full bg-[#0d1527] text-white px-4 py-7 mb-3 font-sans">
       <div className="flex items-center gap-1.5 mb-4">
         <h3 className="text-xl font-bold text-white tracking-wide">
-          오늘의 music
+          오늘의 MUSIC
         </h3>
       </div>
 

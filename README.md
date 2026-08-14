@@ -1,16 +1,201 @@
-# React + Vite
+# 🎧 MUME
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> **Mood + Music**  
+> 사용자의 기분과 상황을 바탕으로 지금 듣고 싶은 음악을 추천해주는 음악 추천 서비스
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 프로젝트 소개
 
-## React Compiler
+**MUME**는 사용자가 현재 느끼는 **감정과 상황을 선택하면 그에 어울리는 음악을 추천해주는 웹 애플리케이션**입니다.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+단순히 음악을 검색하는 것이 아니라  
+기분 + 상황을 기준으로 음악을 탐색할 수 있도록 기획했습니다.
 
-## Expanding the ESLint configuration
+MUME는 음악 스트리밍 서비스가 아닌 **음악 추천 및 탐색 서비스**로,
+추천된 음악은 **iTunes Preview를 통해 30초 미리듣기**가 가능합니다.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+## 기획 의도
+
+음악을 듣고 싶지만 어떤 음악을 들어야 할지 고민되는 상황에서  
+사용자의 현재 감정과 상황에 맞는 음악을 쉽게 찾을 수 있도록 기획했습니다.
+
+---
+
+## 개발 기간
+
+8월 3일 ~ 8월 17일
+
+---
+
+## 주요 기능
+
+### 음악 추천
+
+- 감정과 상황 선택
+- 선택한 조건을 기반으로 음악 검색
+- 여러 곡 중 랜덤으로 6곡 추천
+
+### 음악 상세
+
+- 앨범 이미지
+- 아티스트
+- 앨범명
+- 장르
+- 발매일
+- 아티스트의 다른 인기곡
+- 30초 미리듣기
+
+### 좋아요
+
+- 원하는 음악을 좋아요로 저장
+- LocalStorage를 활용한 데이터 저장
+
+### 플레이리스트
+
+- 플레이리스트 생성
+- 플레이리스트 이름 및 설명 작성
+- 사용자 이미지 업로드를 통한 플레이리스트 커버 설정
+- 음악 추가 및 삭제
+- 플레이리스트 음악 수정
+- 플레이리스트 좋아요
+
+### 모바일 UI
+
+- iPhone 16 기준의 모바일 화면을 고려한 반응형 UI
+- Tailwind CSS를 활용한 일관된 디자인
+- Swiper를 활용한 가로 음악 리스트 구현
+
+---
+
+### 화면 구성
+
+<table>
+
+  <tr>
+    <td valign="top">
+      <img width="180" src="https://github.com/user-attachments/assets/76e07301-42eb-4b8f-ae8d-27c605970a60" alt="main" />
+메인화면
+    </td>
+    <td valign="top">
+      <img width="180" src="https://github.com/user-attachments/assets/c73ee865-9f31-468c-845d-4deb97c331c5" alt="search" />
+검색
+    </td>
+    <td valign="top">
+      <img width="180" src="https://github.com/user-attachments/assets/626d8a98-24c1-42c7-af2c-0fdacda8ea7a" alt="favorite" />
+좋아요
+    </td>
+  </tr>
+
+  <tr>
+    <td valign="top">
+      <img width="180" src="https://github.com/user-attachments/assets/c202695c-2206-42ee-bb86-72ff41d6a6be" alt="taste" />
+취향
+    </td>
+    <td valign="top">
+      <img width="180" src="https://github.com/user-attachments/assets/e123ea4a-3847-450c-87b0-8f5de664cf90" alt="playlist" />
+플레이리스트
+    </td>
+    <td valign="top">
+      <img width="180" src="https://github.com/user-attachments/assets/e6ec9d47-99ce-4642-9dab-2a7d1fed5294" alt="music" />
+음악상세
+    </td>
+  </tr>
+</table>
+
+## 사용 기술
+
+### Frontend
+
+- React
+- JavaScript
+- React Router
+- Tailwind CSS
+- Lucide React
+- Swiper
+
+### API
+
+- **iTunes Search API**
+  - 음악 검색
+  - 앨범 이미지
+  - 아티스트
+  - 앨범
+  - 장르
+  - 발매일
+  - 30초 Preview
+
+- **Last.fm API**
+  - 아티스트 인기곡
+  - 음악 태그 및 장르 정보
+
+### Data Storage
+
+- LocalStorage
+  - 좋아요 음악
+  - 플레이리스트
+  - 플레이리스트에 추가된 음악
+
+---
+
+## 🔧 개선해야 할 점
+
+현재 MUME는 음악 추천, 상세 정보, 좋아요, 플레이리스트 등 핵심 기능을 구현했지만 다음과 같은 부분은 추가적인 개선이 필요하다고 생각됩니다.
+
+### 1. 음악 추천 로직 개선
+
+현재는 사용자가 선택한 감정과 상황을 키워드로 변환하여 iTunes Search API를 검색하고, 검색된 결과 중 일부를 랜덤으로 추천하는 방식으로 구현했습니다.
+
+따라서 같은 감정과 상황을 선택하더라도 추천 결과가 완전히 개인화되어 있지는 않다는 한계가 있습니다.
+
+향후에는 사용자의 재생 이력, 선택한 감정 및 상황 등의 데이터를 활용하여 사용자별 추천 결과가 달라지는 방식으로 개선하고 싶습니다.
+
+### 2. API 데이터 의존성 개선
+
+현재 음악 정보는 iTunes와 Last.fm API에 의존하고 있기 때문에 API 응답 속도나 검색 결과에 따라 추천 결과가 달라질 수 있습니다.
+
+또한 API에서 제공하지 않는 정보는 직접 활용하기 어렵다는 한계가 있습니다.
+
+향후에는 음악 데이터를 별도로 관리할 수 있는 백엔드를 구축하여 보다 안정적으로 데이터를 제공하고, 추천 데이터를 직접 관리할 수 있도록 개선하고 싶습니다.
+
+### 3. 플레이리스트 데이터 관리
+
+현재 좋아요와 플레이리스트 데이터는 LocalStorage를 사용하여 저장하고 있습니다.
+
+별도의 서버 없이 데이터를 유지할 수 있다는 장점이 있지만, 브라우저 환경에 저장되기 때문에 다른 기기에서는 데이터를 확인할 수 없고 저장할 수 있는 데이터에도 한계가 있습니다.
+
+향후에는 데이터베이스와 백엔드를 연동하여 회원별 플레이리스트와 좋아요 데이터를 서버에 저장하는 방식으로 발전시키고 싶습니다.
+
+### 4. 이미지 저장 방식 개선
+
+플레이리스트 커버 이미지는 사용자가 업로드한 이미지를 Base64 형태로 LocalStorage에 저장하고 있습니다.
+
+이 방식은 간단하게 구현할 수 있지만 이미지 용량이 커질 경우 LocalStorage 용량 제한으로 인해 저장에 실패할 수 있다는 문제가 있었습니다.
+
+향후에는 이미지 저장 서버 또는 이미지 스토리지 서비스를 활용하여 이미지 데이터를 별도로 관리하고, 플레이리스트에는 이미지 URL만 저장하는 방식으로 개선할 예정입니다.
+
+---
+
+## 💭 느낀 점
+
+이번 프로젝트를 진행하면서 단순히 화면을 만드는 것과 실제 데이터를 활용하는 서비스를 만드는 것에는 많은 차이가 있다는 것을 경험했습니다.
+
+처음에는 감정과 상황을 선택하면 음악을 보여주는 간단한 구조로 생각했지만, 실제로 구현하면서 API에서 어떤 데이터를 받을 수 있는지 확인하고, 원하는 형태로 데이터를 가공하는 과정이 필요했습니다.
+
+특히 iTunes Search API와 Last.fm API를 함께 사용하면서 각각의 API가 제공하는 데이터가 다르다는 것을 알게 되었고, 필요한 정보를 조합하여 하나의 음악 데이터로 만드는 과정을 경험할 수 있었습니다.
+
+또한 React의 상태 관리와 페이지 간 데이터 전달에 대해서도 많이 배울 수 있었습니다.
+
+음악 상세 페이지에서 선택한 음악 정보를 미리듣기 페이지로 전달하거나, 플레이리스트에 음악을 추가한 뒤 다시 플레이리스트 상세 페이지에서 확인할 수 있도록 구현하면서 컴포넌트 간 데이터 흐름을 직접 고민해볼 수 있었습니다.
+
+LocalStorage를 활용해 좋아요와 플레이리스트 기능을 구현하면서 프론트엔드에서도 사용자의 데이터를 저장하고 관리할 수 있다는 점을 경험했지만, 동시에 브라우저 저장 방식에는 용량과 데이터 관리 측면에서 한계가 있다는 것도 알게 되었습니다.
+
+특히 플레이리스트 커버 이미지를 직접 업로드하는 기능을 구현하면서 이미지 데이터를 LocalStorage에 저장할 경우 저장 공간이 빠르게 증가하여 `QuotaExceededError`가 발생하는 문제도 경험했습니다. 이를 통해 단순히 기능을 구현하는 것에서 끝나는 것이 아니라 데이터의 형태와 저장 방식까지 고려해야 한다는 점을 배웠습니다.
+
+또한 개발 과정에서 예상하지 못했던 라우팅 오류, API 검색 결과 문제, 데이터 전달 문제 등을 직접 해결하면서 오류 메시지를 확인하고 원인을 단계적으로 찾아가는 과정의 중요성을 배울 수 있었습니다.
+
+이번 프로젝트를 통해 React와 API를 활용한 웹 애플리케이션 개발의 전체적인 흐름을 경험할 수 있었고, 단순히 디자인을 구현하는 것보다 사용자가 실제로 어떤 흐름으로 서비스를 이용하는지 고민하며 기능을 설계하는 것이 중요하다는 점을 느꼈습니다.
+
+앞으로는 백엔드와 데이터베이스를 연결하여 회원 기능과 개인화된 음악 추천 기능을 추가하고, 사용자의 음악 취향을 학습하여 더욱 정확한 추천을 제공할 수 있는 서비스로 발전시켜보고 싶습니다.

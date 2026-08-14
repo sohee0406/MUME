@@ -15,7 +15,7 @@ export default function Loading() {
         visible={true}
         height="80"
         width="80"
-        color="#FF2F6E"
+        color="blue"
         ariaLabel="tail-spin-loading"
         radius="1"
       />
