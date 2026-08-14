@@ -304,7 +304,7 @@ export default function Music() {
       <>
         <PageTitle title="MUSIC" />
 
-        <div className="flex-1 bg-slate-950 text-white flex flex-col items-center justify-center px-6 text-center">
+        <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center px-6 text-center">
           <h2 className="text-xl font-bold mb-2">음악을 찾을 수 없습니다.</h2>
 
           <p className="text-sm text-slate-400 mb-6">
@@ -328,7 +328,7 @@ export default function Music() {
     <>
       <PageTitle title="MUSIC" />
 
-      <div className="min-h-screen bg-slate-950 text-white px-5 pt-12 pb-28 relative">
+      <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-950 text-white px-5 pt-12 pb-28 relative">
         {/* 음악 기본 정보 */}
         <div className="flex flex-col items-center text-center mb-10">
           <div className="w-64 h-64 rounded-[32px] overflow-hidden bg-slate-900 mb-6 shadow-2xl">
@@ -431,39 +431,46 @@ export default function Music() {
               {track.artist}의 다른 노래
             </h2>
 
-            <Swiper
-              spaceBetween={14}
-              slidesPerView={2.5}
-              className="!overflow-visible"
-            >
-              {artistTracks.map((item, index) => (
-                <SwiperSlide key={`${item.id}-${index}`}>
-                  <Link
-                    to={`/music/${item.id}`}
-                    state={{ track: item }}
-                    className="block"
+            {/* 모바일 화면 밖으로 넘어가지 않도록 영역 제한 */}
+            <div className="w-full max-w-full overflow-hidden">
+              <Swiper
+                spaceBetween={14}
+                slidesPerView={2.5}
+                slidesOffsetAfter={0}
+                className="!w-full !overflow-visible"
+              >
+                {artistTracks.map((item, index) => (
+                  <SwiperSlide
+                    key={`${item.id}-${index}`}
+                    className="!flex-shrink-0"
                   >
-                    <div className="bg-[#1E2640] rounded-2xl overflow-hidden shadow-md">
-                      <img
-                        src={item.image}
-                        className="w-full aspect-square object-cover"
-                        alt={item.title}
-                      />
+                    <Link
+                      to={`/music/${item.id}`}
+                      state={{ track: item }}
+                      className="block w-full"
+                    >
+                      <div className="bg-[#1E2640] rounded-2xl overflow-hidden shadow-md">
+                        <img
+                          src={item.image}
+                          className="w-full aspect-square object-cover"
+                          alt={item.title}
+                        />
 
-                      <div className="p-3">
-                        <p className="text-xs font-bold truncate">
-                          {item.title}
-                        </p>
+                        <div className="p-3">
+                          <p className="text-xs font-bold truncate">
+                            {item.title}
+                          </p>
 
-                        <p className="text-[10px] text-slate-400 truncate mt-0.5">
-                          {item.artist}
-                        </p>
+                          <p className="text-[10px] text-slate-400 truncate mt-0.5">
+                            {item.artist}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </Link>
-                </SwiperSlide>
-              ))}
-            </Swiper>
+                    </Link>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            </div>
           </section>
         )}
 

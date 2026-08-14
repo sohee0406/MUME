@@ -24,6 +24,7 @@ export default function Section_2() {
         const promises = K_CHART_ARTISTS.map(async (artist) => {
           try {
             const data = await getArtistSongs(artist);
+
             if (data.results && data.results.length > 0) {
               const topTrack = data.results[0];
 
@@ -41,6 +42,7 @@ export default function Section_2() {
           } catch (err) {
             console.error(`${artist} 곡 로드 실패:`, err);
           }
+
           return null;
         });
 
@@ -59,7 +61,7 @@ export default function Section_2() {
   }, []);
 
   return (
-    <section className="w-full bg-[#0d1527] text-white px-4 py-7 mb-3 font-sans">
+    <section className="w-full max-w-full overflow-hidden bg-[#0d1527] text-white px-4 py-7 mb-3 font-sans">
       <div className="flex items-center gap-1.5 mb-4">
         <h3 className="text-xl font-bold text-white tracking-wide">
           오늘의 MUSIC
@@ -67,7 +69,7 @@ export default function Section_2() {
       </div>
 
       {loading ? (
-        <div className="flex gap-3 overflow-hidden">
+        <div className="flex gap-3 overflow-hidden w-full">
           {[1, 2, 3].map((n) => (
             <div
               key={n}
@@ -76,28 +78,30 @@ export default function Section_2() {
           ))}
         </div>
       ) : (
-        <Swiper
-          spaceBetween={12}
-          slidesPerView={2.2}
-          slidesOffsetAfter={16}
-          className="mySwiper !overflow-visible"
-        >
-          {tracks.map((track) => (
-            <SwiperSlide key={track.id} className="w-[130px]">
-              <Link
-                to={`/music/${track.id}`}
-                state={{ track }}
-                className="relative w-[130px] h-[130px] rounded-xl overflow-hidden cursor-pointer shadow-md bg-slate-900 block"
-              >
-                <img
-                  src={track.image}
-                  alt={track.title}
-                  className="w-full h-full object-cover"
-                />
-              </Link>
-            </SwiperSlide>
-          ))}
-        </Swiper>
+        <div className="w-full max-w-full overflow-hidden">
+          <Swiper
+            spaceBetween={12}
+            slidesPerView={2.2}
+            slidesOffsetAfter={0}
+            className="!w-full !overflow-visible"
+          >
+            {tracks.map((track) => (
+              <SwiperSlide key={track.id} className="!w-[130px] !flex-shrink-0">
+                <Link
+                  to={`/music/${track.id}`}
+                  state={{ track }}
+                  className="relative block w-[130px] h-[130px] rounded-xl overflow-hidden cursor-pointer shadow-md bg-slate-900"
+                >
+                  <img
+                    src={track.image}
+                    alt={track.title}
+                    className="w-full h-full object-cover"
+                  />
+                </Link>
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        </div>
       )}
     </section>
   );
