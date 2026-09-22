@@ -1,61 +1,106 @@
-const targetUrl = "https://itunes.apple.com/";
+const BASE_URL = "https://itunes.apple.com/search";
 
-const fetchMusic = async (endpoint) => {
-  try {
-    const queryUrl = `${targetUrl}${endpoint}`;
+/**
+ * iTunes API 공통 요청
+ */
+async function fetchMusic(params = {}) {
+  const searchParams = new URLSearchParams({
+    country: "KR",
+    media: "music",
+    limit: "50",
+    ...params,
+  });
 
-    const response = await fetch(queryUrl);
+  const response = await fetch(`${BASE_URL}?${searchParams.toString()}`);
 
-    if (!response.ok) {
-      throw new Error(`iTunes API 요청 실패 (${response.status})`);
-    }
-
-    const data = await response.json();
-
-    return data;
-  } catch (error) {
-    console.error("iTunes API 오류:", error);
-
-    throw error;
+  if (!response.ok) {
+    throw new Error(`iTunes API 요청 실패: ${response.status}`);
   }
-};
 
-// 검색
-export const getSearch = (keyword) =>
-  fetchMusic(
-    `search?term=${encodeURIComponent(
-      keyword,
-    )}&media=music&entity=song&country=KR&limit=15`,
-  );
+  const data = await response.json();
 
-// 아티스트 검색
-export const getArtistSearch = (keyword) =>
-  fetchMusic(
-    `search?term=${encodeURIComponent(
-      keyword,
-    )}&media=music&entity=musicArtist&country=KR&limit=15`,
-  );
+  console.log("iTunes API:", params.term, data);
 
-// 앨범 검색
-export const getAlbumSearch = (keyword) =>
-  fetchMusic(
-    `search?term=${encodeURIComponent(
-      keyword,
-    )}&media=music&entity=album&country=KR&limit=15`,
-  );
+  return data;
+}
 
-// 특정 아티스트의 음악 검색
-export const getArtistSongs = (artist) =>
-  fetchMusic(
-    `search?term=${encodeURIComponent(
-      artist,
-    )}&media=music&entity=song&country=KR&limit=15`,
-  );
+/**
+ * 일반 음악 검색
+ */
+export async function getSearch(keyword) {
+  return fetchMusic({
+    term: keyword,
+  });
+}
 
-// 장르별 음악 검색
-export const getGenreMusic = (genre) =>
-  fetchMusic(
-    `search?term=${encodeURIComponent(
-      genre,
-    )}&media=music&entity=song&country=KR&limit=15`,
-  );
+/**
+ * 아티스트 음악 검색
+ */
+export async function getArtistSongs(artist) {
+  return fetchMusic({
+    term: artist,
+    attribute: "artistTerm",
+  });
+}
+
+/**
+ * 장르별 음악 검색
+ */
+export async function getGenreMusic(genre) {
+  return fetchMusic({
+    term: genre,
+  });
+}
+
+/**
+ * iTunes에서 가져온 음악 중
+ * 실제 재생 가능한 곡만 추출
+ *
+ * 중요:
+ * iTunes가 music-video를 반환하는 경우도 있기 때문에
+ * kind === "song"만 강제로 요구하지 않는다.
+ */
+export function filterMusicTracks(results = []) {
+  return results.filter((item) => {
+    return (
+      item?.wrapperType === "track" &&
+      item?.trackId &&
+      item?.trackName &&
+      item?.artistName &&
+      item?.previewUrl
+    );
+  });
+}
+
+/**
+ * 재생 가능한 첫 번째 곡
+ */
+export function findPreviewTrack(results = []) {
+  return filterMusicTracks(results)[0] || null;
+}
+
+/**
+ * 재생 가능한 곡 여러 개
+ */
+export function findPreviewTracks(results = [], count = 4) {
+  return filterMusicTracks(results).slice(0, count);
+}
+
+/**
+ * 음악 데이터 정리
+ */
+export function formatTrack(track) {
+  if (!track) return null;
+
+  return {
+    id: track.trackId,
+    title: track.trackName,
+    artist: track.artistName,
+    artwork:
+      track.artworkUrl100 || track.artworkUrl60 || track.artworkUrl30 || "",
+    previewUrl: track.previewUrl || "",
+    trackViewUrl: track.trackViewUrl || "",
+    collectionName: track.collectionName || "",
+    genre: track.primaryGenreName || "",
+  };
+}

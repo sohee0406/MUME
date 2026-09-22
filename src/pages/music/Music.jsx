@@ -3,8 +3,7 @@ import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import { Play, Heart, X, CheckCircle2, Loader2 } from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
-
-import { getSearch } from "../../api/itunes";
+import { getSearch, filterMusicTracks } from "../../api/itunes";
 import { getArtistTopTracks, getTrackTags } from "../../api/lastfm";
 import { useScrollTop } from "../../lib/useScrollTop";
 import PageTitle from "../../components/PageTitle";
@@ -59,7 +58,22 @@ export default function Music() {
           const searchData = await getSearch(id);
 
           if (searchData?.results?.length > 0) {
-            const t = searchData.results[0];
+            const detailTracks = filterMusicTracks(searchData.results);
+
+            const t =
+              detailTracks.find((item) => item.previewUrl) || detailTracks[0];
+
+            if (t) {
+              currentTrack = {
+                id: t.trackId,
+                title: t.trackName,
+                artist: t.artistName,
+                image: t.artworkUrl100?.replace("100x100bb", "300x300bb"),
+                previewUrl: t.previewUrl || "",
+              };
+
+              setTrack(currentTrack);
+            }
 
             currentTrack = {
               id: t.trackId,
@@ -82,7 +96,10 @@ export default function Music() {
           `${currentTrack.artist} ${currentTrack.title}`,
         );
 
-        const info = detailData?.results?.[0];
+        const detailTracks = filterMusicTracks(detailData?.results || []);
+
+        const info =
+          detailTracks.find((item) => item.previewUrl) || detailTracks[0];
 
         let determinedGenre = currentTrack?.genre;
 

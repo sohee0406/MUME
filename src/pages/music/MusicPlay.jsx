@@ -12,7 +12,7 @@ import {
   X,
 } from "lucide-react";
 
-import { getSearch } from "../../api/itunes";
+import { getSearch, filterMusicTracks } from "../../api/itunes";
 import PageTitle from "../../components/PageTitle";
 
 export default function MusicPlay() {
@@ -57,7 +57,24 @@ export default function MusicPlay() {
           const searchData = await getSearch(id);
 
           if (searchData?.results?.length > 0) {
-            const t = searchData.results[0];
+            const detailTracks = filterMusicTracks(searchData.results);
+
+            const t =
+              detailTracks.find((item) => item.previewUrl) || detailTracks[0];
+
+            if (t) {
+              currentTrack = {
+                id: t.trackId,
+                title: t.trackName,
+                artist: t.artistName,
+                image: t.artworkUrl100
+                  ? t.artworkUrl100.replace("100x100bb", "600x600bb")
+                  : "",
+                previewUrl: t.previewUrl || "",
+              };
+
+              setTrack(currentTrack);
+            }
 
             currentTrack = {
               id: t.trackId,
@@ -94,7 +111,12 @@ export default function MusicPlay() {
               `${currentTrack.artist} ${currentTrack.title}`,
             );
 
-            finalPreviewUrl = detailData?.results?.[0]?.previewUrl || "";
+            const detailTracks = filterMusicTracks(detailData?.results || []);
+
+            // previewUrl이 있는 결과를 찾음
+            const previewTrack = detailTracks.find((item) => item.previewUrl);
+
+            finalPreviewUrl = previewTrack?.previewUrl || "";
           } catch (error) {
             console.error("미리듣기 음원 조회 실패:", error);
             finalPreviewUrl = "";

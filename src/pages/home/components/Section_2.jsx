@@ -30,7 +30,7 @@ export default function Section_2() {
 
               const highResImage = topTrack.artworkUrl100
                 ? topTrack.artworkUrl100.replace("100x100bb", "300x300bb")
-                : "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop";
+                : "";
 
               return {
                 id: topTrack.trackId,
@@ -71,10 +71,14 @@ export default function Section_2() {
       {loading ? (
         <div className="flex gap-3 overflow-hidden w-full">
           {[1, 2, 3].map((n) => (
-            <div
-              key={n}
-              className="w-[130px] h-[130px] flex-shrink-0 bg-slate-800/50 animate-pulse rounded-xl"
-            />
+            <div key={n} className="w-[130px] flex-shrink-0">
+              <div className="w-[130px] h-[130px] bg-slate-800/50 animate-pulse rounded-xl" />
+
+              <div className="mt-2">
+                <div className="w-20 h-3 bg-slate-800/50 animate-pulse rounded" />
+                <div className="w-14 h-2.5 bg-slate-800/50 animate-pulse rounded mt-1.5" />
+              </div>
+            </div>
           ))}
         </div>
       ) : (
@@ -90,13 +94,54 @@ export default function Section_2() {
                 <Link
                   to={`/music/${track.id}`}
                   state={{ track }}
-                  className="relative block w-[130px] h-[130px] rounded-xl overflow-hidden cursor-pointer shadow-md bg-slate-900"
+                  className="block w-[130px]"
                 >
-                  <img
-                    src={track.image}
-                    alt={track.title}
-                    className="w-full h-full object-cover"
-                  />
+                  {/* 앨범 이미지 */}
+                  <div className="relative w-[130px] h-[130px] rounded-xl overflow-hidden cursor-pointer shadow-md bg-slate-900 flex items-center justify-center">
+                    {track.image ? (
+                      <img
+                        src={track.image}
+                        alt={track.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+
+                          const fallback =
+                            e.currentTarget.parentElement.querySelector(
+                              ".image-fallback",
+                            );
+
+                          if (fallback) {
+                            fallback.classList.remove("hidden");
+                          }
+                        }}
+                      />
+                    ) : null}
+
+                    {/* 이미지 없음 */}
+                    <div
+                      className={`image-fallback absolute inset-0 flex items-center justify-center ${
+                        track.image ? "hidden" : ""
+                      }`}
+                    >
+                      <span className="text-xs text-slate-500 text-center">
+                        이미지
+                        <br />
+                        없음
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 곡 정보 */}
+                  <div className="mt-2 px-0.5 min-w-0">
+                    <p className="text-xs font-bold text-white truncate">
+                      {track.title}
+                    </p>
+
+                    <p className="text-[11px] text-slate-400 mt-1 truncate">
+                      {track.artist}
+                    </p>
+                  </div>
                 </Link>
               </SwiperSlide>
             ))}
